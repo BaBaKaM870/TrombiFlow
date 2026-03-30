@@ -14,9 +14,7 @@ async function generate(req, res, next) {
     }
 
     const students = await Student.findAll({ class_id });
-    if (students.length === 0) {
-      return res.status(404).json({ error: 'No students found for the given filters' });
-    }
+    if (students.length === 0) return res.status(404).json({ error: 'No students found' });
 
     let class_label = '';
     if (class_id) {
@@ -29,30 +27,22 @@ async function generate(req, res, next) {
 
     if (format === 'html') {
       const html = generateTrombiHTML(students, opts);
-      await Export.create({ class_id: class_id || null, format: 'html', file_path: null, generated_by: userId })
+      Export.create({ class_id: class_id || null, format: 'html', file_path: null, generated_by: userId })
         .catch((e) => console.warn('Export log failed:', e.message));
-
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.send(html);
     }
 
-    // PDF
     const pdfPath = await generatePDF(students, opts);
-    await Export.create({ class_id: class_id || null, format: 'pdf', file_path: pdfPath, generated_by: userId })
+    Export.create({ class_id: class_id || null, format: 'pdf', file_path: pdfPath, generated_by: userId })
       .catch((e) => console.warn('Export log failed:', e.message));
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="trombi-${class_label || 'all'}-${Date.now()}.pdf"`
-    );
-
+    res.setHeader('Content-Disposition', `attachment; filename="trombi-${class_label || 'all'}-${Date.now()}.pdf"`);
     const stream = fs.createReadStream(pdfPath);
     stream.pipe(res);
     stream.on('error', next);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
 module.exports = { generate };

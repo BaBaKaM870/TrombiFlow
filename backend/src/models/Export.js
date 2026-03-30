@@ -12,10 +12,7 @@ const Export = {
 
   async findAll() {
     const { rows } = await pool.query(`
-      SELECT
-        e.*,
-        c.label AS class_label,
-        u.username AS generated_by_name
+      SELECT e.*, c.label AS class_label, u.username AS generated_by_name
       FROM exports e
       LEFT JOIN classes c ON e.class_id = c.id
       LEFT JOIN users   u ON e.generated_by = u.id

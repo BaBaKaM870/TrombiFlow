@@ -75,10 +75,7 @@ const Student = {
   },
 
   async delete(id) {
-    const { rowCount } = await pool.query(
-      'DELETE FROM students WHERE id = $1',
-      [id]
-    );
+    const { rowCount } = await pool.query('DELETE FROM students WHERE id = $1', [id]);
     return rowCount > 0;
   },
 

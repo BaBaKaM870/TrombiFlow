@@ -2,17 +2,12 @@ const pool = require('../config/database');
 
 const Class = {
   async findAll() {
-    const { rows } = await pool.query(
-      'SELECT * FROM classes ORDER BY label'
-    );
+    const { rows } = await pool.query('SELECT * FROM classes ORDER BY label');
     return rows;
   },
 
   async findById(id) {
-    const { rows } = await pool.query(
-      'SELECT * FROM classes WHERE id = $1',
-      [id]
-    );
+    const { rows } = await pool.query('SELECT * FROM classes WHERE id = $1', [id]);
     return rows[0] || null;
   },
 
@@ -48,10 +43,7 @@ const Class = {
   },
 
   async delete(id) {
-    const { rowCount } = await pool.query(
-      'DELETE FROM classes WHERE id = $1',
-      [id]
-    );
+    const { rowCount } = await pool.query('DELETE FROM classes WHERE id = $1', [id]);
     return rowCount > 0;
   },
 };
