@@ -1,0 +1,76 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: trombiflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-trombiflow}
+      POSTGRES_USER: ${POSTGRES_USER:-trombiflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trombiflow_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trombiflow} -d ${POSTGRES_DB:-trombiflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: trombiflow-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trombiflow-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: ${BACKEND_PORT:-3000}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://trombiflow:trombiflow_dev_password@db:5432/trombiflow}
+      STORAGE: ${STORAGE:-local}
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_dev}
+      PDF_ENGINE: ${PDF_ENGINE:-wkhtmltopdf}
+      UPLOAD_DIR: /data/uploads
+      S3_BUCKET: ${S3_BUCKET:-trombiflow}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_KEY: ${S3_KEY:-minioadmin}
+      S3_SECRET: ${S3_SECRET:-minioadmin}
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    ports:
+      - "${BACKEND_PORT:-3000}:${BACKEND_PORT:-3000}"
+    volumes:
+      - uploads_data:/data/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: trombiflow-frontend
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+
+volumes:
+  db_data:
+  uploads_data:
+  minio_data:
