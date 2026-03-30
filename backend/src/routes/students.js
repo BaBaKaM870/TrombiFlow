@@ -1,4 +1,5 @@
-const router = require('express').Router();
+const express = require('express');
+const router = express.Router();
 const studentController = require('../controllers/studentController');
 const { uploadPhoto, uploadCsv } = require('../middlewares/upload');
 
