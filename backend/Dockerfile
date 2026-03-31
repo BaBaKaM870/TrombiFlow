@@ -1,48 +1,31 @@
-FROM node:20-alpine AS deps-prod
-
-WORKDIR /app
-COPY package*.json ./
-RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
-
-FROM node:20-alpine AS deps-build
-
-WORKDIR /app
-COPY package*.json ./
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
-
-FROM node:20-alpine AS build
-
-WORKDIR /app
-COPY --from=deps-build /app/node_modules ./node_modules
-COPY . .
-# Keep this step optional to support JS and TS repositories.
-RUN npm run build --if-present
-
-FROM node:20-alpine AS runtime
+FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
-RUN apk add --no-cache tini \
-	&& addgroup -S appgroup \
-	&& adduser -S appuser -G appgroup
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        tini \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appgroup \
+    && useradd -r -g appgroup appuser
 
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV STORAGE=local
-ENV PDF_ENGINE=wkhtmltopdf
+ENV ENV=production
+ENV PORT=8000
+ENV STORAGE_TYPE=local
+ENV UPLOAD_DIR=/data/uploads
 
 # Runtime variables expected from environment/secrets manager:
-# DATABASE_URL, JWT_SECRET, and optional S3 settings.
+# DATABASE_URL, JWT_SECRET
 
-COPY package*.json ./
-COPY --from=deps-prod /app/node_modules ./node_modules
-COPY --from=build /app/src ./src
-COPY --from=build /app/migrations ./migrations
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src ./src
+COPY migrations ./migrations
 
 RUN mkdir -p /data/uploads && chown -R appuser:appgroup /app /data/uploads
 
 USER appuser
-EXPOSE 3000
+EXPOSE 8000
 
-ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "src/app.js"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
