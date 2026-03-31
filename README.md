@@ -222,6 +222,12 @@ Jean,Dupont,jean.dupont@school.fr,3A,2025,
 ## 🧪 Tests
 
 ```bash
+# Depuis la racine du projet, tout lancer en une seule commande (Bash/Git Bash)
+(cd backend && npm test -- --watchAll=false) && (cd ../frontend && CI=true npm test -- --watchAll=false)
+
+#Sur le terminal de VSC :
+Set-Location backend; npm test -- --watchAll=false; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
+
 # Lancer tous les tests backend
 cd backend && npm test
 
@@ -231,6 +237,14 @@ cd frontend && npm test
 # Avec couverture de code
 npm run test:coverage
 ```
+
+```powershell
+# Depuis la racine du projet, tout lancer en une seule commande (PowerShell Windows)
+Set-Location backend; npm test -- --watchAll=false; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
+```
+
+> Sous Windows PowerShell, utilise le bloc `powershell` ci-dessus.
+> La ligne `CI=true ...` du bloc `bash` ne fonctionne pas en PowerShell.
 
 Les tests couvrent : création classe/élève, import CSV (happy path + erreurs), upload photo → vignette générée, génération trombi HTML (statut 200) et PDF (fichier non vide).
 
