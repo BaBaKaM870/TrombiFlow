@@ -7,3 +7,5 @@ python-multipart
 Pillow
 reportlab
 python-dotenv
+pytest
+httpx
