@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+psycopg2-binary
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+Pillow
+reportlab
+python-dotenv
+pytest
+httpx
