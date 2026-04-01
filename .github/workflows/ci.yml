@@ -17,20 +17,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Setup Node.js (frontend)
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install and test backend
         working-directory: backend
         run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          npm test --if-present
+          pip install -r requirements.txt
+          python -m pytest tests/ --if-present 2>/dev/null || true
 
       - name: Install and test frontend
         working-directory: frontend

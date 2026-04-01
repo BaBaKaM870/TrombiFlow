@@ -38,24 +38,17 @@ services:
     container_name: trombiflow-web
     restart: unless-stopped
     environment:
-      NODE_ENV: development
-      PORT: ${BACKEND_PORT:-3000}
+      ENV: development
+      PORT: ${BACKEND_PORT:-8000}
       DATABASE_URL: ${DATABASE_URL:-postgresql://trombiflow:trombiflow_dev_password@db:5432/trombiflow}
-      STORAGE: ${STORAGE:-local}
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
       JWT_SECRET: ${JWT_SECRET:-change_me_in_dev}
-      PDF_ENGINE: ${PDF_ENGINE:-wkhtmltopdf}
       UPLOAD_DIR: /data/uploads
-      S3_BUCKET: ${S3_BUCKET:-trombiflow}
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
-      S3_KEY: ${S3_KEY:-minioadmin}
-      S3_SECRET: ${S3_SECRET:-minioadmin}
     depends_on:
       db:
         condition: service_healthy
-      minio:
-        condition: service_started
     ports:
-      - "${BACKEND_PORT:-3000}:${BACKEND_PORT:-3000}"
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - uploads_data:/data/uploads
 
