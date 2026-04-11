@@ -1,4 +1,5 @@
 import { useState } from "react";
+import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
 import ClassesPage from "./pages/ClassesPage";
 import StudentsPage from "./pages/StudentsPage";
@@ -6,10 +7,11 @@ import GeneratePage from "./pages/GeneratePage";
 import Icon from "./components/Icon";
 import { ToastContainer, useToasts } from "./components/Toast";
 import { EXPORTS_LOG, INITIAL_CLASSES, INITIAL_STUDENTS } from "./services/api";
+import esieeLogo from "./images/logo-esiee-it.png";
 import "./styles.css";
 
 export default function App() {
-  const [page, setPage] = useState("dashboard");
+  const [page, setPage] = useState("landing");
   const [classes, setClasses] = useState(INITIAL_CLASSES);
   const [students, setStudents] = useState(INITIAL_STUDENTS);
   const [exports, setExports] = useState(EXPORTS_LOG);
@@ -22,14 +24,30 @@ export default function App() {
     { id: "generate", label: "Générer", icon: "generate", section: "EXPORT" },
   ];
 
+  if (page === "landing") {
+    return (
+      <>
+        <LandingPage onEnter={() => setPage("dashboard")} toast={addToast} />
+        <ToastContainer toasts={toasts} />
+      </>
+    );
+  }
+
   return (
     <>
       <div className="app">
         {/* Sidebar */}
         <aside className="sidebar">
           <div className="sidebar-logo">
-            <div className="sidebar-logo-title">Trombi<span>scope</span></div>
-            <div className="sidebar-logo-sub">École Supérieure · 2025-2026</div>
+            <div className="sidebar-logo-row">
+              <div className="sidebar-logo-wrap">
+                <img className="sidebar-logo-img" src={esieeLogo} alt="ESIEE-IT" />
+              </div>
+              <div>
+                <div className="sidebar-logo-title">Trombi<span>scope</span></div>
+                <div className="sidebar-logo-sub">École Supérieure · 2025-2026</div>
+              </div>
+            </div>
           </div>
           <nav className="sidebar-nav">
             {nav.map((item) => (
