@@ -8,6 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  DEPLOY_ENABLED: false
 
 jobs:
   test:
@@ -93,7 +94,7 @@ jobs:
   deploy:
     name: Deploy
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
