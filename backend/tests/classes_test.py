@@ -38,7 +38,7 @@ class TestPostClasses:
 
     def test_returns_409_on_duplicate_label(self):
         with patch("src.routers.classes.ClassModel.create") as mock:
-            mock.side_effect = pg_errors.UniqueViolation()
+            mock.side_effect = pg_errors.UniqueViolation("UNIQUE violation")
             res = client.post("/api/classes/", json={"label": "3B"})
         assert res.status_code == 409
 
