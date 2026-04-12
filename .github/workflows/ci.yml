@@ -8,6 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  DEPLOY_ENABLED: false
 
 jobs:
   test:
@@ -96,7 +97,12 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
+      - name: Déploiement désactivé par défaut
+        if: env.DEPLOY_ENABLED != 'true'
+        run: echo "Déploiement désactivé pour ce projet"
+
       - name: Deploy via SSH
+        if: env.DEPLOY_ENABLED == 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
