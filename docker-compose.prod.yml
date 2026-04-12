@@ -33,17 +33,12 @@ services:
       minio:
         condition: service_started
     environment:
-      NODE_ENV: production
-      PORT: ${BACKEND_PORT:-3000}
+      ENV: production
+      PORT: 8000
       DATABASE_URL: ${DATABASE_URL}
-      STORAGE: ${STORAGE:-local}
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
       JWT_SECRET: ${JWT_SECRET}
-      PDF_ENGINE: ${PDF_ENGINE:-wkhtmltopdf}
       UPLOAD_DIR: /data/uploads
-      S3_BUCKET: ${S3_BUCKET:-trombiflow}
-      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
-      S3_KEY: ${S3_KEY:-minioadmin}
-      S3_SECRET: ${S3_SECRET:-minioadmin}
     volumes:
       - uploads_data:/data/uploads
 

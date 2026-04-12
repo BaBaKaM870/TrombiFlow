@@ -23,7 +23,7 @@ COPY src ./src
 COPY migrations ./migrations
 COPY migrate.py ./
 COPY entrypoint.sh ./
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 RUN mkdir -p /data/uploads && chown -R appuser:appgroup /app /data/uploads
 
@@ -31,4 +31,4 @@ USER appuser
 EXPOSE 8000
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["./entrypoint.sh"]
+CMD ["sh", "./entrypoint.sh"]
