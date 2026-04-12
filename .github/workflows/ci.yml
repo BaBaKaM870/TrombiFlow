@@ -94,10 +94,15 @@ jobs:
   deploy:
     name: Deploy
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DEPLOY_ENABLED == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
+      - name: Déploiement désactivé par défaut
+        if: env.DEPLOY_ENABLED != 'true'
+        run: echo "Déploiement désactivé pour ce projet"
+
       - name: Deploy via SSH
+        if: env.DEPLOY_ENABLED == 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
