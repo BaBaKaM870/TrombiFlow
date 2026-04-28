@@ -1,11 +1,16 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from psycopg2 import errors as pg_errors
 
 from ..models.class_ import ClassModel
+from ..middlewares.auth import get_current_user
 
-router = APIRouter(prefix="/api/classes", tags=["classes"])
+router = APIRouter(
+    prefix="/api/classes",
+    tags=["classes"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 class ClassCreate(BaseModel):
