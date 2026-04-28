@@ -1,14 +1,17 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from jose import jwt
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ..models.user import UserModel
 from ..middlewares.auth import get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_limiter = Limiter(key_func=get_remote_address)
 
 
 class LoginBody(BaseModel):
@@ -24,7 +27,8 @@ class RegisterBody(BaseModel):
 
 
 @router.post("/login")
-def login(data: LoginBody):
+@_limiter.limit("5/minute")
+def login(request: Request, data: LoginBody):
     user = UserModel.find_by_email(data.email)
     if not user or not _pwd.verify(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
