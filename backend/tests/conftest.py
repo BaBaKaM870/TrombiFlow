@@ -7,6 +7,11 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 
+def pytest_configure(config):
+    if backend_dir not in sys.path:
+        sys.path.insert(0, backend_dir)
+
+
 MOCK_USER = {"id": 1, "username": "testuser", "email": "test@school.fr", "role": "teacher"}
 
 
