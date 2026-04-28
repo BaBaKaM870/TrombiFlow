@@ -1,4 +1,6 @@
 import os
+import time
+import random
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -82,7 +84,6 @@ async def upload_photo(id: int, photo: UploadFile = File(...)):
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    import time, random
     ext = os.path.splitext(photo.filename or "")[1].lower() or ".jpg"
     tmp_path = os.path.join(UPLOAD_DIR, f"{int(time.time() * 1000)}-{random.randint(0, 999999)}{ext}")
 

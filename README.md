@@ -18,7 +18,7 @@
 
 ---
 
-## 📋 Table des matières
+## Table des matières
 
 - [Contexte](#-contexte)
 - [Fonctionnalités](#-fonctionnalités)
@@ -35,7 +35,7 @@
 
 ---
 
-## 🎯 Contexte
+## Contexte
 
 TrombiFlow est une application web conteneurisée qui permet à l'administration scolaire de **centraliser les données élèves** et de **générer automatiquement des trombinoscopes** (par classe, promo, filière) aux formats PDF et HTML.
 
@@ -43,36 +43,38 @@ TrombiFlow est une application web conteneurisée qui permet à l'administration
 
 ---
 
-## ✨ Fonctionnalités
+## Fonctionnalités
 
-- 📁 **CRUD Classes** — Gestion des classes (3A, 3B, M1 MIAGE, etc.)
-- 👤 **CRUD Élèves** — Nom, prénom, email, classe, photo
-- 📸 **Upload photo** — JPEG/PNG < 5 MB, redimensionnement automatique 300×300
-- 📥 **Import CSV** — Création d'élèves en masse
-- 🖼️ **Génération HTML** — Grille responsive de vignettes + noms
-- 📄 **Génération PDF** — Format A4 portrait, 30–40 photos/page, footer RGPD
-- 🔍 **Recherche & filtres** — Par classe, promo, nom
-- 🔐 **Authentification JWT** — Rôles admin / enseignant *(option)*
-- 📋 **Journalisation** — Historique des exports générés
+- CRUD Classes — Gestion des classes (3A, 3B, M1 MIAGE, etc.)
+- CRUD Élèves — Nom, prénom, email, classe, photo
+- Upload photo — JPEG/PNG < 5 MB, redimensionnement automatique 300×300
+- Import CSV — Création d'élèves en masse
+- Génération HTML — Grille responsive de vignettes + noms
+- Génération PDF — Format A4 portrait, 30–40 photos/page, footer RGPD
+- Recherche & filtres — Par classe, promo, nom
+- Authentification JWT — Rôles admin / enseignant (option)
+- Journalisation — Historique des exports générés
 
 ---
 
-## 🛠 Stack technique
+## Stack technique
 
 | Couche | Technologie |
 |--------|-------------|
-| **Backend** | Node.js · Express |
-| **Frontend** | React 18 · Vite |
-| **Base de données** | PostgreSQL 15 |
+| **Backend** | Python 3.11 · FastAPI · uvicorn |
+| **Frontend** | React 18 · Vite · Node.js 20-alpine |
+| **Base de données** | PostgreSQL 15-alpine |
 | **Stockage fichiers** | Local `/uploads` ou S3/MinIO |
 | **Génération PDF** | WeasyPrint / wkhtmltopdf |
-| **Conteneurisation** | Docker · Docker Compose |
-| **CI/CD** | GitHub Actions |
-| **Tests** | Jest · Supertest |
+| **Conteneurisation** | Docker multi-stage · Docker Compose |
+| **Orchestration** | Docker Compose · Kubernetes (manifests) |
+| **CI/CD** | GitHub Actions (test → build → deploy) |
+| **Tests** | pytest (backend) · Jest (frontend) |
+| **Registry** | GitHub Container Registry (GHCR) |
 
 ---
 
-## 🏗 Architecture
+##  Architecture
 
 ```
 trombi-connecte/
@@ -105,7 +107,7 @@ trombi-connecte/
 
 ---
 
-## 🚀 Installation
+##  Installation
 
 ```bash
 # 1. Cloner le dépôt
@@ -126,7 +128,7 @@ L'application sera disponible sur :
 
 ---
 
-## ⚙️ Variables d'environnement
+##  Variables d'environnement
 
 Copiez `.env.example` en `.env` et renseignez les valeurs :
 
@@ -156,7 +158,7 @@ PORT=3000
 
 ---
 
-## ▶️ Lancer le projet
+##  Lancer le projet
 
 **Avec Docker (recommandé)**
 ```bash
@@ -180,7 +182,7 @@ npm run dev
 
 ---
 
-## 📡 API Reference
+##  API Reference
 
 ### Classes
 | Méthode | Endpoint | Description |
@@ -219,7 +221,7 @@ Jean,Dupont,jean.dupont@school.fr,3A,2025,
 
 ---
 
-## 🧪 Tests
+##  Tests
 
 ```bash
 # Depuis la racine du projet, tout lancer en une seule commande (Bash/Git Bash)
@@ -250,7 +252,7 @@ Les tests couvrent : création classe/élève, import CSV (happy path + erreurs)
 
 ---
 
-## 🔄 CI/CD
+##  CI/CD
 
 Le pipeline GitHub Actions se déclenche à chaque push et comprend 3 jobs :
 
@@ -273,7 +275,7 @@ SSH_KEY            # Clé SSH privée
 
 ---
 
-## 👥 Équipe
+##  Équipe
 
 | Membre | Rôle |
 |--------|------|
