@@ -172,7 +172,9 @@ export default function TrombiGenerator({ classes, students, setExports, toast }
               <div key={c.id} onClick={() => setSelClass(c)} style={{
                 display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 10,
                 cursor: "pointer", marginBottom: 6, border: `2px solid ${selClass?.id === c.id ? "var(--coral)" : "var(--border)"}`,
-                background: selClass?.id === c.id ? "#fff5f3" : "white", transition: "all 0.15s"
+                background: selClass?.id === c.id ? "#fff5f3" : "white",
+                transition: "transform var(--motion-fast) var(--ease-out-quick), box-shadow var(--motion-fast) var(--ease-out-quick), border-color var(--motion-fast) var(--ease-out-quick), background var(--motion-fast) var(--ease-out-quick)",
+                transform: "translateZ(0)"
               }}>
                 <div style={{ width: 10, height: 10, borderRadius: "50%", background: CLASS_COLORS[i % CLASS_COLORS.length], flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
@@ -254,7 +256,7 @@ export default function TrombiGenerator({ classes, students, setExports, toast }
               <div>
                 <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>Génération en cours…</div>
                 <div className="progress-bar" style={{ height: 10 }}>
-                  <div className="progress-fill" style={{ width: `${progress}%` }} />
+                  <div className="progress-fill" style={{ "--progress": `${progress / 100}` }} />
                 </div>
                 <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>{Math.round(progress)}%</div>
               </div>

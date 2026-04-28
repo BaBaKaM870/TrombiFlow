@@ -15,12 +15,12 @@ router = APIRouter(
 
 class ClassCreate(BaseModel):
     label: str
-    year: Optional[int] = None
+    year: Optional[str] = None
 
 
 class ClassUpdate(BaseModel):
     label: Optional[str] = None
-    year: Optional[int] = None
+    year: Optional[str] = None
 
 
 @router.get("/")

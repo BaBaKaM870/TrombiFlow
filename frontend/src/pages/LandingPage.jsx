@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Modal from "../components/Modal";
 import esieeLogo from "../images/logo-esiee-it.png";
 import landingImage from "../images/landing-image.png";
@@ -60,7 +60,9 @@ export default function LandingPage({ onEnter, toast }) {
     name: "",
     email: "",
     password: "",
+    photo: null,
   });
+  const [registerPhotoPreview, setRegisterPhotoPreview] = useState("");
 
   const openLogin = () => {
     setShowRegister(false);
@@ -94,22 +96,59 @@ export default function LandingPage({ onEnter, toast }) {
     onEnter?.();
   };
 
+  useEffect(() => {
+    if (!registerForm.photo) {
+      setRegisterPhotoPreview("");
+      return undefined;
+    }
+
+    const previewUrl = URL.createObjectURL(registerForm.photo);
+    setRegisterPhotoPreview(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [registerForm.photo]);
+
+  useEffect(() => {
+    const elements = Array.from(document.querySelectorAll(".reveal"));
+    if (elements.length === 0) {
+      return undefined;
+    }
+
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      elements.forEach((el) => el.classList.add("is-visible"));
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2, rootMargin: "0px 0px -10% 0px" }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="landing-shell" id="top">
       <header className="landing-nav">
         <div className="landing-brand">
+          <div className="landing-brand-title">Trombi<span>scope</span></div>
           <div className="landing-logo-wrap">
-            <img className="landing-logo" src={esieeLogo} alt="ESIEE-IT" />
-          </div>
-          <div>
-            <div className="landing-brand-title">Trombi<span>scope</span></div>
-            <div className="landing-brand-sub">ESIEE-IT · 2025-2026</div>
+            {/* <img className="landing-logo" src={esieeLogo} alt="ESIEE-IT" /> */}
           </div>
         </div>
         <nav className="landing-nav-links">
-          <a href="#features">Fonctionnalités</a>
-          <a href="#how-it-works">Comment ça marche</a>
-          <a href="#contact">Contact</a>
+          <a className="link-underline" href="#features">Fonctionnalités</a>
+          <a className="link-underline" href="#how-it-works">Comment ça marche</a>
+          <a className="link-underline" href="#contact">Contact</a>
         </nav>
         <div className="landing-nav-actions">
           <button className="btn btn-secondary" type="button" onClick={openLogin}>Connexion</button>
@@ -132,14 +171,14 @@ export default function LandingPage({ onEnter, toast }) {
             <button className="btn btn-secondary" type="button" onClick={onEnter}>Découvrir le tableau de bord</button>
           </div>
           <div className="landing-hero-meta">
-            <span className="landing-meta-chip">Accès sécurisé</span>
-            <span className="landing-meta-chip">RGPD</span>
-            <span className="landing-meta-chip">Gestion simple</span>
+            <span className="landing-meta-chip motion-ripple">Accès sécurisé</span>
+            <span className="landing-meta-chip motion-ripple">RGPD</span>
+            <span className="landing-meta-chip motion-ripple">Gestion simple</span>
           </div>
         </div>
 
         <div className="landing-hero-visual">
-          <div className="landing-preview-card">
+          <div className="landing-preview-card motion-elevate">
             <div className="landing-preview-header">
               <div>
                 <div className="landing-preview-title">Centralisez, gérez, imprimez</div>
@@ -156,14 +195,18 @@ export default function LandingPage({ onEnter, toast }) {
       </section>
 
       <section className="landing-features" id="features">
-        <div className="landing-section-head">
+        <div className="landing-section-head reveal" style={{ "--reveal-delay": "0ms" }}>
           <div>
             <div className="landing-section-title">Pensé pour les écoles</div>
             <div className="landing-section-sub">Des outils simples pour des trombinoscopes impeccables.</div>
           </div>
         </div>
-        {FEATURES.map((f) => (
-          <div className="landing-feature-card" key={f.id}>
+        {FEATURES.map((f, idx) => (
+          <div
+            className="landing-feature-card reveal motion-elevate"
+            key={f.id}
+            style={{ "--reveal-delay": `${idx * 90}ms` }}
+          >
             <img className="landing-feature-icon" src={f.icon} alt={f.title} />
             <div className="landing-feature-title">{f.title}</div>
             <div className="landing-feature-text">{f.text}</div>
@@ -172,7 +215,7 @@ export default function LandingPage({ onEnter, toast }) {
       </section>
 
       <section className="landing-how" id="how-it-works">
-        <div className="landing-section-head">
+        <div className="landing-section-head reveal" style={{ "--reveal-delay": "0ms" }}>
           <div>
             <div className="landing-section-title">Comment ça marche</div>
             <div className="landing-section-sub">Un flux clair pour centraliser et exporter en sécurité.</div>
@@ -180,7 +223,11 @@ export default function LandingPage({ onEnter, toast }) {
         </div>
         <div className="landing-how-grid">
           {HOW_IT_WORKS.map((step, idx) => (
-            <div className="landing-how-card" key={step.id}>
+            <div
+              className="landing-how-card reveal motion-elevate"
+              key={step.id}
+              style={{ "--reveal-delay": `${idx * 90}ms` }}
+            >
               <div className="landing-how-index">0{idx + 1}</div>
               <div className="landing-how-title">{step.title}</div>
               <div className="landing-how-text">{step.text}</div>
@@ -191,7 +238,7 @@ export default function LandingPage({ onEnter, toast }) {
 
       <footer className="landing-footer" id="contact">
         <div className="landing-footer-grid">
-          <div className="landing-footer-col">
+          <div className="landing-footer-col reveal" style={{ "--reveal-delay": "0ms" }}>
             <div className="landing-footer-title-row">
               <div className="landing-footer-logo-wrap">
                 <img className="landing-footer-logo" src={esieeLogo} alt="ESIEE-IT" />
@@ -200,23 +247,23 @@ export default function LandingPage({ onEnter, toast }) {
             </div>
             <div className="landing-footer-text">Plateforme interne pour la gestion des classes et des élèves.</div>
           </div>
-          <div className="landing-footer-col">
+          <div className="landing-footer-col reveal" style={{ "--reveal-delay": "90ms" }}>
             <div className="landing-footer-title">Navigation</div>
-            <a className="landing-footer-link" href="#top">Accueil</a>
-            <a className="landing-footer-link" href="#features">Fonctionnalités</a>
-            <a className="landing-footer-link" href="#how-it-works">Comment ça marche</a>
+            <a className="landing-footer-link link-underline" href="#top">Accueil</a>
+            <a className="landing-footer-link link-underline" href="#features">Fonctionnalités</a>
+            <a className="landing-footer-link link-underline" href="#how-it-works">Comment ça marche</a>
           </div>
-          <div className="landing-footer-col">
+          <div className="landing-footer-col reveal" style={{ "--reveal-delay": "180ms" }}>
             <div className="landing-footer-title">Contact</div>
             <div className="landing-footer-text">support.trombiflow@esiee-it.fr</div>
             <div className="landing-footer-text">01 23 45 67 89</div>
             <div className="landing-footer-text">Campus ESIEE-IT, Pontoise</div>
           </div>
-          <div className="landing-footer-col">
+          <div className="landing-footer-col reveal" style={{ "--reveal-delay": "270ms" }}>
             <div className="landing-footer-title">Aide</div>
-            <a className="landing-footer-link" href="#how-it-works">Guide rapide</a>
-            <a className="landing-footer-link" href="#contact">Support</a>
-            <a className="landing-footer-link" href="mailto:support.trombiflow@esiee-it.fr">Envoyer un email</a>
+            <a className="landing-footer-link link-underline" href="#how-it-works">Guide rapide</a>
+            <a className="landing-footer-link link-underline" href="#contact">Support</a>
+            <a className="landing-footer-link link-underline" href="mailto:support.trombiflow@esiee-it.fr">Envoyer un email</a>
           </div>
         </div>
         <div className="landing-footer-bottom">
@@ -291,6 +338,30 @@ export default function LandingPage({ onEnter, toast }) {
                 value={registerForm.email}
                 onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
               />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Photo (optionnel)</label>
+              <input
+                className="form-input"
+                type="file"
+                accept="image/*"
+                onChange={(e) =>
+                  setRegisterForm({
+                    ...registerForm,
+                    photo: e.target.files?.[0] ?? null,
+                  })
+                }
+              />
+              {registerPhotoPreview && (
+                <div className="form-image-preview">
+                  <img
+                    className="form-image-thumb"
+                    src={registerPhotoPreview}
+                    alt="Aperçu de la photo"
+                  />
+                  <span className="form-image-caption">Aperçu chargé</span>
+                </div>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Mot de passe</label>

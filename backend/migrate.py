@@ -8,8 +8,14 @@ script is safe to run on every container start.
 """
 import glob
 import os
+from pathlib import Path
 
 import psycopg2
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent / ".env")
 
 
 def run() -> None:

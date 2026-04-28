@@ -40,12 +40,19 @@ export default function App() {
         <aside className="sidebar">
           <div className="sidebar-logo">
             <div className="sidebar-logo-row">
+              <a
+                className="sidebar-logo-title sidebar-logo-link" id = "home-link"
+                href="/"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPage("landing");
+                }}
+                aria-label="Aller a la page d'accueil"
+              >
+                Trombi<span>scope</span>
+              </a>
               <div className="sidebar-logo-wrap">
                 <img className="sidebar-logo-img" src={esieeLogo} alt="ESIEE-IT" />
-              </div>
-              <div>
-                <div className="sidebar-logo-title">Trombi<span>scope</span></div>
-                <div className="sidebar-logo-sub">École Supérieure · 2025-2026</div>
               </div>
             </div>
           </div>
