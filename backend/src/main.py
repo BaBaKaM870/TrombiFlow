@@ -11,6 +11,7 @@ from psycopg2 import errors as pg_errors
 from .config.storage import UPLOAD_DIR
 from .middlewares.auth import get_current_user
 from .routers import auth, classes, students, trombi
+from fastapi import Depends
 
 app = FastAPI(title="TrombiFlow API", version="1.0.0")
 
@@ -27,6 +28,11 @@ app.include_router(auth.router)
 app.include_router(classes.router)
 app.include_router(students.router)
 app.include_router(trombi.router)
+
+
+@app.get("/api/me")
+def me(current_user: dict = Depends(get_current_user)):
+    return current_user
 
 
 @app.exception_handler(HTTPException)
