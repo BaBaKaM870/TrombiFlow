@@ -1,15 +1,18 @@
 import os
+
 import random
 import time
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
+from ..config.storage import UPLOAD_DIR
+from ..services.image_service import resize_photo
+from ..config.limiter import limiter
+
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from jose import jwt
-
 from ..models.user import UserModel
 from ..middlewares.auth import get_current_user
-from ..config.storage import UPLOAD_DIR
-from ..services.image_service import resize_photo
+
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -33,7 +36,8 @@ MAX_PHOTO_SIZE = 5 * 1024 * 1024
 
 
 @router.post("/login")
-def login(data: LoginBody):
+@limiter.limit("5/minute")
+def login(request: Request, data: LoginBody):
     user = UserModel.find_by_email(data.email)
     if not user or not _pwd.verify(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")

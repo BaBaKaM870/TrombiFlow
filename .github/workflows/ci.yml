@@ -2,51 +2,85 @@ name: CI-CD
 
 on:
   push:
-    branches: [main]
+    branches: [main, devops]
   pull_request:
     branches: [main]
+  workflow_dispatch: {}
 
 env:
   REGISTRY: ghcr.io
   DEPLOY_ENABLED: false
 
 jobs:
-  test:
-    name: Test
+  check-versions:
+    name: Check Pinned Versions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Check for non-pinned versions
+        run: bash scripts/check-versions.sh
+
+  test-backend:
+    name: Test (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
-      - name: Setup Node.js (frontend)
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Upgrade pip, setuptools and wheel
+        run: python -m pip install --upgrade pip setuptools wheel
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: python -m pip install -r requirements.txt
+
+      - name: Run backend tests
+        working-directory: backend
+        run: python -m pytest -q tests/
+
+  test-frontend:
+    name: Test (frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install and test backend
-        working-directory: backend
+      - name: Install and test frontend (inside Node docker)
         run: |
-          pip install -r requirements.txt
-          python -m pytest -q tests/
-
-      - name: Install and test frontend
-        working-directory: frontend
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          npm test --if-present
+          # Run frontend install & tests inside an official Node container to avoid host/tooling issues
+          docker run --rm \
+            -v ${{ github.workspace }}/frontend:/app \
+            -w /app \
+            node:20-bullseye-slim \
+            bash -lc "if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit; else npm install --no-audit; fi && npm test --if-present"
 
   build:
     name: Build And Push
-    needs: test
+    needs: [check-versions, test-backend, test-frontend]
     runs-on: ubuntu-latest
     permissions:
       contents: read

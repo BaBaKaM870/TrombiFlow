@@ -1,7 +1,7 @@
 import os
 import time
 import random
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -10,8 +10,13 @@ from ..models.student import StudentModel
 from ..config.storage import UPLOAD_DIR
 from ..services.image_service import resize_photo
 from ..services.csv_service import parse_csv, process_csv_records
+from ..middlewares.auth import get_current_user
 
-router = APIRouter(prefix="/api/students", tags=["students"])
+router = APIRouter(
+    prefix="/api/students",
+    tags=["students"],
+    dependencies=[Depends(get_current_user)],
+)
 
 ALLOWED_PHOTO_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_PHOTO_SIZE = 5 * 1024 * 1024   # 5 MB
