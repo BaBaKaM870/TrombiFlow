@@ -49,7 +49,10 @@ export default function DashboardPage({ classes, students, exports: exportsLog }
                     <span style={{ fontSize: 12, color: "var(--muted)" }}>{c.count} élèves</span>
                   </div>
                   <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${(c.count / 40) * 100}%`, background: CLASS_COLORS[i % CLASS_COLORS.length] }} />
+                    <div
+                      className="progress-fill"
+                      style={{ "--progress": `${c.count / 40}`, background: CLASS_COLORS[i % CLASS_COLORS.length] }}
+                    />
                   </div>
                 </div>
               </div>
