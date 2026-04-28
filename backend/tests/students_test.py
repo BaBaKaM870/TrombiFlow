@@ -77,10 +77,10 @@ class TestImportStudents:
         assert res.status_code == 422
 
     def test_imports_students_from_valid_csv(self):
-        csv_content = b"first_name,last_name,email,class_label,year\nJean,Dupont,jean@school.fr,3A,2025"
+        csv_content = b"first_name,last_name,email,class_label,year\nJean,Dupont,jean@school.fr,3A,2025-2026"
         with patch("src.services.csv_service.ClassModel.find_all") as mock_classes, \
              patch("src.routers.students.StudentModel.bulk_create") as mock_create:
-            mock_classes.return_value = [{"id": 1, "label": "3A", "year": 2025}]
+            mock_classes.return_value = [{"id": 1, "label": "3A", "year": "2025-2026"}]
             mock_create.return_value = [{"id": 1, "first_name": "Jean", "last_name": "Dupont"}]
             res = client.post(
                 "/api/students/import",

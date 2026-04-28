@@ -11,7 +11,7 @@ class ClassModel:
         return query_one("SELECT * FROM classes WHERE id = %s", (id,))
 
     @staticmethod
-    def create(label: str, year: int | None = None) -> dict:
+    def create(label: str, year: str | None = None) -> dict:
         return query_one(
             "INSERT INTO classes (label, year) VALUES (%s, %s) RETURNING *",
             (label, year),

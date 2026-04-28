@@ -39,9 +39,10 @@ def process_csv_records(records: list[dict]):
                 class_id = existing["id"]
             else:
                 try:
+                    year_value = (rec.get("year") or "").strip() or None
                     created = ClassModel.create(
                         label=class_label,
-                        year=int(rec["year"]) if rec.get("year") else None,
+                        year=year_value,
                     )
                     class_id = created["id"]
                     class_cache = None
