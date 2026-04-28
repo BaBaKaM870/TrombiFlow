@@ -2,9 +2,10 @@ name: CI-CD
 
 on:
   push:
-    branches: [main]
+    branches: [main, devops]
   pull_request:
     branches: [main]
+  workflow_dispatch: {}
 
 env:
   REGISTRY: ghcr.io
@@ -68,11 +69,14 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install and test frontend
-        working-directory: frontend
+      - name: Install and test frontend (inside Node docker)
         run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          npm test --if-present
+          # Run frontend install & tests inside an official Node container to avoid host/tooling issues
+          docker run --rm \
+            -v ${{ github.workspace }}/frontend:/app \
+            -w /app \
+            node:20-bullseye-slim \
+            bash -lc "if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit; else npm install --no-audit; fi && npm test --if-present"
 
   build:
     name: Build And Push
