@@ -1,10 +1,16 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
+from psycopg2 import errors as pg_errors
 
 from ..models.class_ import ClassModel
+from ..middlewares.auth import get_current_user
 
-router = APIRouter(prefix="/api/classes", tags=["classes"])
+router = APIRouter(
+    prefix="/api/classes",
+    tags=["classes"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 class ClassCreate(BaseModel):
@@ -32,7 +38,10 @@ def get_by_id(id: int):
 
 @router.post("/", status_code=201)
 def create(data: ClassCreate):
-    return ClassModel.create(data.label, data.year)
+    try:
+        return ClassModel.create(data.label, data.year)
+    except pg_errors.UniqueViolation:
+        raise HTTPException(status_code=409, detail="Resource already exists")
 
 
 @router.put("/{id}")

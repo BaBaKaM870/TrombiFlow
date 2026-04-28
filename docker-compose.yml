@@ -18,7 +18,7 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     container_name: trombiflow-minio
     restart: unless-stopped
     environment:
@@ -39,7 +39,7 @@ services:
     restart: unless-stopped
     environment:
       ENV: development
-      PORT: ${BACKEND_PORT:-8000}
+      PORT: 8000
       DATABASE_URL: ${DATABASE_URL:-postgresql://trombiflow:trombiflow_dev_password@db:5432/trombiflow}
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       JWT_SECRET: ${JWT_SECRET:-change_me_in_dev}

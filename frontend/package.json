@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "trombiflow-app",
   "version": "0.1.0",
   "private": true,
@@ -35,5 +36,26 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+=======
+  "name": "trombinoscope",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "jspdf": "2.5.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.1",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.1",
+    "vite": "5.4.2"
+>>>>>>> bca602517ec5c9d272ee90053529c023bc1cd2a7
   }
 }
