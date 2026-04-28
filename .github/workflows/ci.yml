@@ -11,6 +11,16 @@ env:
   DEPLOY_ENABLED: false
 
 jobs:
+  check-versions:
+    name: Check Pinned Versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for non-pinned versions
+        run: bash scripts/check-versions.sh
+
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -38,15 +48,25 @@ jobs:
           pip install -r requirements.txt
           python -m pytest -q tests/
 
+      - name: Audit Python dependencies
+        working-directory: backend
+        run: |
+          pip install pip-audit
+          pip-audit --desc
+
       - name: Install and test frontend
         working-directory: frontend
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
           npm test --if-present
 
+      - name: Audit npm dependencies
+        working-directory: frontend
+        run: npm audit --audit-level=moderate || true
+
   build:
     name: Build And Push
-    needs: test
+    needs: [check-versions, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
