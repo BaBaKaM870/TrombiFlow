@@ -1,7 +1,7 @@
 import Icon from "../components/Icon";
 import { CLASS_COLORS } from "../services/api";
 
-export default function DashboardPage({ classes, students, exports: exportsLog }) {
+export default function DashboardPage({ classes, students, exports: exportsLog, onDownloadExport }) {
   const stats = [
     { label: "Classes actives", value: classes.length, icon: "📚", bg: "#fdeae6", change: "+2 cette année" },
     { label: "Étudiants inscrits", value: students.length, icon: "🎓", bg: "#e8f4fd", change: "+12 ce mois" },
@@ -103,7 +103,13 @@ export default function DashboardPage({ classes, students, exports: exportsLog }
                 <td style={{ color: "var(--muted)", fontSize: 12 }}>{e.by}</td>
                 <td style={{ color: "var(--muted)", fontSize: 12 }}>{e.date}</td>
                 <td>
-                  <button className="btn btn-ghost btn-sm"><Icon name="download" size={13} /> Télécharger</button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    disabled={!e.filePath}
+                    onClick={() => onDownloadExport?.(e)}
+                  >
+                    <Icon name="download" size={13} /> Télécharger
+                  </button>
                 </td>
               </tr>
             ))}

@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import os
 
 import random
@@ -15,7 +17,7 @@ from ..middlewares.auth import get_current_user
 
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
-_pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_pwd = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 class LoginBody(BaseModel):
@@ -33,13 +35,23 @@ class RegisterBody(BaseModel):
 
 ALLOWED_PHOTO_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_PHOTO_SIZE = 5 * 1024 * 1024
+MAX_ARGON2_PASSWORD_BYTES = 10000000000
+
+
+def _normalize_password(password: str) -> str:
+    password_bytes = password.encode("utf-8")
+    if len(password_bytes) <= MAX_ARGON2_PASSWORD_BYTES:
+        return password
+    digest = hashlib.sha256(password_bytes).digest()
+    return base64.b64encode(digest).decode("ascii")
 
 
 @router.post("/login")
 @limiter.limit("5/minute")
 def login(request: Request, data: LoginBody):
     user = UserModel.find_by_email(data.email)
-    if not user or not _pwd.verify(data.password, user["password_hash"]):
+    password = _normalize_password(data.password)
+    if not user or not _pwd.verify(password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = jwt.encode(
         {"userId": user["id"], "role": user["role"]},
@@ -54,7 +66,7 @@ def login(request: Request, data: LoginBody):
 
 @router.post("/register", status_code=201)
 def register(data: RegisterBody):
-    password_hash = _pwd.hash(data.password)
+    password_hash = _pwd.hash(_normalize_password(data.password))
     try:
         return UserModel.create(
             data.username,
@@ -75,7 +87,7 @@ async def register_with_photo(
     role: str = Form("teacher"),
     photo: UploadFile | None = File(None),
 ):
-    password_hash = _pwd.hash(password)
+    password_hash = _pwd.hash(_normalize_password(password))
     photo_url = None
 
     if photo:

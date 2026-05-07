@@ -102,7 +102,8 @@ trombi-connecte/
 ## ✅ Prérequis
 
 - [Docker](https://www.docker.com/) >= 24 & Docker Compose >= 2
-- [Node.js](https://nodejs.org/) >= 18 *(pour le dev local sans Docker)*
+- [Python](https://www.python.org/) >= 3.11 *(backend FastAPI en local)*
+- [Node.js](https://nodejs.org/) >= 18 *(frontend Vite en local)*
 - [Git](https://git-scm.com/)
 
 ---
@@ -123,7 +124,7 @@ docker compose up -d
 
 L'application sera disponible sur :
 - **Frontend** → http://localhost:5173
-- **API Backend** → http://localhost:3000
+- **API Backend** -> http://localhost:8000
 - **MinIO Console** → http://localhost:9001 *(si activé)*
 
 ---
@@ -134,13 +135,13 @@ Copiez `.env.example` en `.env` et renseignez les valeurs :
 
 ```env
 # Base de données
-DATABASE_URL=postgresql://user:password@db:5432/trombiflow
+DATABASE_URL=postgresql://user:password@localhost:5432/trombiflow
 
 # Stockage (local ou s3)
-STORAGE=local
-UPLOAD_DIR=/data/uploads
+STORAGE_TYPE=local
+UPLOAD_DIR=uploads
 
-# S3/MinIO (si STORAGE=s3)
+# S3/MinIO (si stockage S3)
 S3_BUCKET=trombiflow
 S3_ENDPOINT=http://minio:9000
 S3_KEY=minioadmin
@@ -153,7 +154,7 @@ PDF_ENGINE=weasyprint   # ou wkhtmltopdf
 JWT_SECRET=change_me_in_production
 
 # Serveur
-PORT=3000
+PORT=8000
 ```
 
 ---
@@ -171,8 +172,11 @@ docker compose down           # Arrêter
 ```bash
 # Backend
 cd backend
-npm install
-npm run dev
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python migrate.py
+python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 
 # Frontend (autre terminal)
 cd frontend
