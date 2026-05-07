@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
 import ClassesPage from "./pages/ClassesPage";
@@ -6,20 +6,216 @@ import StudentsPage from "./pages/StudentsPage";
 import GeneratePage from "./pages/GeneratePage";
 import Icon from "./components/Icon";
 import { ToastContainer, useToasts } from "./components/Toast";
-import { EXPORTS_LOG, INITIAL_CLASSES, INITIAL_STUDENTS } from "./services/api";
+import {
+  createClass,
+  createStudent,
+  deleteClass,
+  deleteStudent,
+  downloadExport,
+  generateTrombi,
+  getClasses,
+  getExports,
+  getMe,
+  getStudents,
+  importStudentsCSV,
+  login,
+  register,
+  registerWithPhoto,
+  updateClass,
+  updateStudent,
+  uploadStudentPhoto,
+} from "./services/clientAPI";
 import esieeLogo from "./images/logo-esiee-it.png";
 import "./styles.css";
 
 export default function App() {
   const [page, setPage] = useState("landing");
-  const [classes, setClasses] = useState(INITIAL_CLASSES);
-  const [students, setStudents] = useState(INITIAL_STUDENTS);
-  const [exports, setExports] = useState(EXPORTS_LOG);
+  const [classes, setClasses] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [exportsLog, setExportsLog] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [bootstrapping, setBootstrapping] = useState(true);
   const { toasts, add: addToast } = useToasts();
+
+  const reloadData = async () => {
+    const [classesData, studentsData, exportsData] = await Promise.all([
+      getClasses(),
+      getStudents(),
+      getExports(),
+    ]);
+
+    setClasses(classesData);
+    setStudents(studentsData);
+    setExportsLog(exportsData);
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setBootstrapping(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const user = await getMe();
+        setCurrentUser(user);
+        await reloadData();
+        setPage("dashboard");
+      } catch {
+        localStorage.removeItem("token");
+        setCurrentUser(null);
+      } finally {
+        setBootstrapping(false);
+      }
+    })();
+  }, []);
+
+  const classesView = useMemo(
+    () => classes.map((cls) => ({ ...cls, count: students.filter((student) => student.classId === cls.id).length })),
+    [classes, students]
+  );
+
+  const handleAuthSuccess = async ({ token, user }) => {
+    localStorage.setItem("token", token);
+    setCurrentUser(user);
+    await reloadData();
+    setPage("dashboard");
+  };
+
+  const handleLogin = async ({ email, password }) => {
+    const result = await login(email, password);
+    await handleAuthSuccess(result);
+    return result;
+  };
+
+  const handleRegister = async (form) => {
+    if (form.photo) {
+      const formData = new FormData();
+      formData.append("username", form.name);
+      formData.append("email", form.email);
+      formData.append("password", form.password);
+      formData.append("role", "teacher");
+      formData.append("photo", form.photo);
+      await registerWithPhoto(formData);
+    } else {
+      await register({
+        username: form.name,
+        email: form.email,
+        password: form.password,
+        role: "teacher",
+      });
+    }
+
+    const result = await login(form.email, form.password);
+    await handleAuthSuccess(result);
+    return result;
+  };
+
+  const handleClassSave = async (form, editingId = null) => {
+    const payload = {
+      label: form.label.trim(),
+      year: form.year?.trim() || null,
+    };
+
+    if (editingId) {
+      await updateClass(editingId, payload);
+      addToast("Classe mise à jour ✓");
+    } else {
+      await createClass(payload);
+      addToast("Classe créée ✓");
+    }
+
+    await reloadData();
+  };
+
+  const handleClassDelete = async (id) => {
+    await deleteClass(id);
+    addToast("Classe supprimée", "error");
+    await reloadData();
+  };
+
+  const handleStudentSave = async (form, editingId = null) => {
+    const payload = {
+      first_name: form.firstName.trim(),
+      last_name: form.lastName.trim(),
+      email: form.email.trim() || null,
+      class_id: form.classId ? Number(form.classId) : null,
+    };
+
+    if (editingId) {
+      await updateStudent(editingId, payload);
+      if (form.photo) {
+        try {
+          await uploadStudentPhoto(editingId, form.photo);
+        } catch (error) {
+          await reloadData();
+          addToast(`Etudiant mis a jour, mais photo non envoyee : ${error.message}`, "error");
+          return;
+        }
+      }
+      addToast("Étudiant mis à jour ✓");
+    } else {
+      const created = await createStudent(payload);
+      if (form.photo) {
+        try {
+          await uploadStudentPhoto(created.id, form.photo);
+        } catch (error) {
+          await reloadData();
+          addToast(`Etudiant ajoute, mais photo non envoyee : ${error.message}`, "error");
+          return;
+        }
+      }
+      addToast("Étudiant ajouté ✓");
+    }
+
+    await reloadData();
+  };
+
+  const handleStudentDelete = async (id) => {
+    await deleteStudent(id);
+    addToast("Étudiant supprimé", "error");
+    await reloadData();
+  };
+
+  const handleCsvImport = async (file) => {
+    const result = await importStudentsCSV(file);
+    addToast(`Import CSV : ${result.created} créés`, "success");
+    await reloadData();
+    return result;
+  };
+
+  const handleStudentPhotoUpload = async (id, file) => {
+    await uploadStudentPhoto(id, file);
+    addToast("Photo mise à jour ✓");
+    await reloadData();
+  };
+
+  const handleGenerateTrombi = async (classId, format) => {
+    const response = await generateTrombi(classId, format);
+    await reloadData();
+    return response;
+  };
+
+  const handleDownloadExport = async (entry) => {
+    if (!entry?.id || !entry.filePath) {
+      addToast("Aucun fichier disponible pour cet export", "error");
+      return;
+    }
+
+    const response = await downloadExport(entry.id);
+    const blob = await response.blob();
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `trombi-${entry.class || "all"}.pdf`;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+  };
 
   const nav = [
     { id: "dashboard", label: "Tableau de bord", icon: "dashboard", section: "NAVIGATION" },
-    { id: "classes", label: "Classes", icon: "classes", section: null, badge: classes.length },
+    { id: "classes", label: "Classes", icon: "classes", section: null, badge: classesView.length },
     { id: "students", label: "Étudiants", icon: "students", section: null, badge: students.length },
     { id: "generate", label: "Générer", icon: "generate", section: "EXPORT" },
   ];
@@ -27,21 +223,40 @@ export default function App() {
   if (page === "landing") {
     return (
       <>
-        <LandingPage onEnter={() => setPage("dashboard")} toast={addToast} />
+        <LandingPage
+          onEnter={() => {
+            if (!localStorage.getItem("token")) {
+              addToast("Connectez-vous d'abord", "error");
+              return;
+            }
+            setPage("dashboard");
+          }}
+          onLogin={handleLogin}
+          onRegister={handleRegister}
+          toast={addToast}
+        />
         <ToastContainer toasts={toasts} />
       </>
+    );
+  }
+
+  if (bootstrapping && page !== "landing") {
+    return (
+      <div className="app" style={{ alignItems: "center", justifyContent: "center" }}>
+        <div className="card" style={{ padding: 24 }}>Chargement…</div>
+      </div>
     );
   }
 
   return (
     <>
       <div className="app">
-        {/* Sidebar */}
         <aside className="sidebar">
           <div className="sidebar-logo">
             <div className="sidebar-logo-row">
               <a
-                className="sidebar-logo-title sidebar-logo-link" id = "home-link"
+                className="sidebar-logo-title sidebar-logo-link"
+                id="home-link"
                 href="/"
                 onClick={(event) => {
                   event.preventDefault();
@@ -69,15 +284,14 @@ export default function App() {
             ))}
           </nav>
           <div className="sidebar-user">
-            <div className="user-avatar-sm">A</div>
+            <div className="user-avatar-sm">{currentUser?.username?.[0]?.toUpperCase() || "A"}</div>
             <div>
-              <div className="user-info-name">Admin</div>
-              <div className="user-info-role">Administrateur</div>
+              <div className="user-info-name">{currentUser?.username || "Admin"}</div>
+              <div className="user-info-role">{currentUser?.role || "Administrateur"}</div>
             </div>
           </div>
         </aside>
 
-        {/* Main */}
         <main className="main">
           <div className="topbar">
             <div className="topbar-title">
@@ -95,10 +309,10 @@ export default function App() {
             <span className="badge badge-blue" style={{ fontSize: 11, padding: "5px 12px" }}>✦ Session active</span>
           </div>
 
-          {page === "dashboard" && <DashboardPage classes={classes} students={students} exports={exports} />}
-          {page === "classes" && <ClassesPage classes={classes} setClasses={setClasses} students={students} toast={addToast} />}
-          {page === "students" && <StudentsPage students={students} setStudents={setStudents} classes={classes} toast={addToast} />}
-          {page === "generate" && <GeneratePage classes={classes} students={students} setExports={setExports} toast={addToast} />}
+          {page === "dashboard" && <DashboardPage classes={classesView} students={students} exports={exportsLog} onDownloadExport={handleDownloadExport} />}
+          {page === "classes" && <ClassesPage classes={classesView} students={students} onSaveClass={handleClassSave} onDeleteClass={handleClassDelete} toast={addToast} />}
+          {page === "students" && <StudentsPage students={students} classes={classesView} onSaveStudent={handleStudentSave} onDeleteStudent={handleStudentDelete} onImportCsv={handleCsvImport} onUploadPhoto={handleStudentPhotoUpload} toast={addToast} />}
+          {page === "generate" && <GeneratePage classes={classesView} students={students} onGenerateTrombi={handleGenerateTrombi} toast={addToast} />}
         </main>
       </div>
 

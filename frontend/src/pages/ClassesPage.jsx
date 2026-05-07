@@ -4,7 +4,7 @@ import Icon from "../components/Icon";
 import Modal from "../components/Modal";
 import { CLASS_COLORS } from "../services/api";
 
-export default function ClassesPage({ classes, setClasses, students, toast }) {
+export default function ClassesPage({ classes, students, onSaveClass, onDeleteClass, toast }) {
   const [showModal, setShowModal] = useState(false);
   const [editClass, setEditClass] = useState(null);
   const [search, setSearch] = useState("");
@@ -12,19 +12,12 @@ export default function ClassesPage({ classes, setClasses, students, toast }) {
 
   const openNew = () => { setEditClass(null); setShowModal(true); };
   const openEdit = (c) => { setEditClass(c); setShowModal(true); };
-  const save = (form) => {
-    if (editClass) {
-      setClasses(cs => cs.map(c => c.id === editClass.id ? { ...c, ...form } : c));
-      toast("Classe mise à jour ✓");
-    } else {
-      setClasses(cs => [...cs, { id: Date.now(), ...form, count: 0 }]);
-      toast("Classe créée ✓");
-    }
+  const save = async (form) => {
+    await onSaveClass(form, editClass?.id || null);
     setShowModal(false);
   };
-  const del = (id) => {
-    setClasses(cs => cs.filter(c => c.id !== id));
-    toast("Classe supprimée", "error");
+  const del = async (id) => {
+    await onDeleteClass(id);
   };
 
   const filtered = classes.filter(c => c.label.toLowerCase().includes(search.toLowerCase()));

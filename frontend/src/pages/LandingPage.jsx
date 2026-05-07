@@ -52,7 +52,7 @@ const HOW_IT_WORKS = [
   },
 ];
 
-export default function LandingPage({ onEnter, toast }) {
+export default function LandingPage({ onEnter, onLogin, onRegister, toast }) {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
@@ -74,26 +74,38 @@ export default function LandingPage({ onEnter, toast }) {
     setShowRegister(true);
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (!loginForm.email || !loginForm.password) {
       toast?.("Merci de renseigner email et mot de passe", "error");
       return;
     }
-    toast?.("Connexion simulée \u2713");
-    setShowLogin(false);
-    onEnter?.();
+
+    try {
+      await onLogin?.(loginForm);
+      toast?.("Connexion réussie ✓");
+      setShowLogin(false);
+      onEnter?.();
+    } catch (error) {
+      toast?.(error.message, "error");
+    }
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     if (!registerForm.name || !registerForm.email || !registerForm.password) {
       toast?.("Merci de remplir tous les champs", "error");
       return;
     }
-    toast?.("Compte créé (simulation) \u2713");
-    setShowRegister(false);
-    onEnter?.();
+
+    try {
+      await onRegister?.(registerForm);
+      toast?.("Compte créé ✓");
+      setShowRegister(false);
+      onEnter?.();
+    } catch (error) {
+      toast?.(error.message, "error");
+    }
   };
 
   useEffect(() => {

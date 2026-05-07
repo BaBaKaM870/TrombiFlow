@@ -1,7 +1,7 @@
 import os
 import time
 import random
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -19,6 +19,7 @@ router = APIRouter(
 )
 
 ALLOWED_PHOTO_TYPES = {"image/jpeg", "image/png", "image/webp"}
+ALLOWED_PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_PHOTO_SIZE = 5 * 1024 * 1024   # 5 MB
 MAX_CSV_SIZE   = 10 * 1024 * 1024  # 10 MB
 
@@ -39,6 +40,7 @@ class StudentUpdate(BaseModel):
     photo_url: Optional[str] = None
 
 
+@router.get("", include_in_schema=False)
 @router.get("/")
 def get_all(
     class_id: Optional[int] = Query(None),
@@ -55,6 +57,7 @@ def get_by_id(id: int):
     return s
 
 
+@router.post("", status_code=201, include_in_schema=False)
 @router.post("/", status_code=201)
 def create(data: StudentCreate):
     return StudentModel.create(
@@ -78,7 +81,8 @@ def remove(id: int):
 
 @router.post("/{id}/photo")
 async def upload_photo(id: int, photo: UploadFile = File(...)):
-    if photo.content_type not in ALLOWED_PHOTO_TYPES:
+    ext = os.path.splitext(photo.filename or "")[1].lower()
+    if photo.content_type not in ALLOWED_PHOTO_TYPES and ext not in ALLOWED_PHOTO_EXTENSIONS:
         raise HTTPException(status_code=415, detail="Only JPEG, PNG and WebP images are allowed")
 
     content = await photo.read()
@@ -89,7 +93,7 @@ async def upload_photo(id: int, photo: UploadFile = File(...)):
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    ext = os.path.splitext(photo.filename or "")[1].lower() or ".jpg"
+    ext = ext if ext in ALLOWED_PHOTO_EXTENSIONS else ".jpg"
     tmp_path = os.path.join(UPLOAD_DIR, f"{int(time.time() * 1000)}-{random.randint(0, 999999)}{ext}")
 
     with open(tmp_path, "wb") as f:
@@ -97,12 +101,13 @@ async def upload_photo(id: int, photo: UploadFile = File(...)):
 
     try:
         final_path = resize_photo(tmp_path)
-        rel_url = "uploads/" + os.path.basename(final_path)
-        return StudentModel.update_photo(id, rel_url)
-    except Exception:
+    except Exception as exc:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
-        raise
+        raise HTTPException(status_code=400, detail="Invalid image file") from exc
+
+    rel_url = "uploads/" + os.path.basename(final_path)
+    return StudentModel.update_photo(id, rel_url)
 
 
 @router.post("/import", status_code=201)
@@ -111,7 +116,11 @@ async def import_csv(file: UploadFile = File(...)):
     if len(content) > MAX_CSV_SIZE:
         raise HTTPException(status_code=413, detail="File too large (max 10 MB)")
 
-    records = parse_csv(content)
+    try:
+        records = parse_csv(content)
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="CSV file must be encoded in UTF-8")
+
     if not records:
         raise HTTPException(status_code=400, detail="CSV file is empty")
 

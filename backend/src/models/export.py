@@ -28,3 +28,16 @@ class ExportModel:
             ORDER BY e.created_at DESC
             """
         )
+
+    @staticmethod
+    def find_by_id(id: int) -> dict | None:
+        return query_one(
+            """
+            SELECT e.*, c.label AS class_label, u.username AS generated_by_name
+            FROM exports e
+            LEFT JOIN classes c ON e.class_id = c.id
+            LEFT JOIN users   u ON e.generated_by = u.id
+            WHERE e.id = %s
+            """,
+            (id,),
+        )

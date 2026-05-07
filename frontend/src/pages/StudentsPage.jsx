@@ -4,15 +4,16 @@ import Icon from "../components/Icon";
 import Modal from "../components/Modal";
 import StudentForm from "../components/StudentForm";
 import StudentGrid from "../components/StudentGrid";
-import { AVATARS } from "../services/api";
 
-export default function StudentsPage({ students, setStudents, classes, toast }) {
+export default function StudentsPage({ students, classes, onSaveStudent, onDeleteStudent, onImportCsv, onUploadPhoto, toast }) {
   const [view, setView] = useState("grid");
   const [search, setSearch] = useState("");
   const [filterClass, setFilterClass] = useState("all");
   const [showModal, setShowModal] = useState(false);
+  const [editStudent, setEditStudent] = useState(null);
   const [showCSV, setShowCSV] = useState(false);
   const [csvResult, setCsvResult] = useState(null);
+  const [csvFile, setCsvFile] = useState(null);
   const formRef = useRef(null);
 
   const filtered = students.filter(s => {
@@ -22,26 +23,38 @@ export default function StudentsPage({ students, setStudents, classes, toast }) 
     return matchQ && matchC;
   });
 
-  const saveStudent = (form) => {
-    const newS = {
-      id: Date.now(),
-      ...form,
-      classId: +form.classId || 1,
-      photo: AVATARS[Math.floor(Math.random() * AVATARS.length)],
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    setStudents(s => [...s, newS]);
-    setShowModal(false);
-    toast("Étudiant ajouté ✓");
+  const openNew = () => {
+    setEditStudent(null);
+    setShowModal(true);
   };
 
-  const delStudent = (id) => { setStudents(s => s.filter(x => x.id !== id)); toast("Étudiant supprimé", "error"); };
+  const openEdit = (student) => {
+    setEditStudent(student);
+    setShowModal(true);
+  };
 
-  const simulateCSV = () => {
-    const created = Math.floor(Math.random() * 18) + 8;
-    const errors = Math.floor(Math.random() * 4);
-    setCsvResult({ created, errors });
-    toast(`Import CSV : ${created} créés, ${errors} erreurs`);
+  const saveStudent = async (form) => {
+    try {
+      await onSaveStudent(form, editStudent?.id || null);
+      setShowModal(false);
+      setEditStudent(null);
+    } catch (error) {
+      toast(error.message || "Impossible d'enregistrer l'etudiant", "error");
+    }
+  };
+
+  const delStudent = async (id) => { await onDeleteStudent(id); };
+
+  const importCSV = async () => {
+    if (!csvFile) {
+      toast("Choisissez un fichier CSV", "error");
+      return;
+    }
+
+    const result = await onImportCsv(csvFile);
+    setCsvResult({ created: result.created, errors: Array.isArray(result.errors) ? result.errors.length : 0 });
+    setShowCSV(false);
+    setCsvFile(null);
   };
 
   return (
@@ -53,7 +66,7 @@ export default function StudentsPage({ students, setStudents, classes, toast }) 
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="btn btn-secondary" onClick={() => { setShowCSV(true); setCsvResult(null); }}><Icon name="upload" /> Importer CSV</button>
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}><Icon name="plus" /> Ajouter</button>
+          <button className="btn btn-primary" onClick={openNew}><Icon name="plus" /> Ajouter</button>
         </div>
       </div>
 
@@ -75,36 +88,36 @@ export default function StudentsPage({ students, setStudents, classes, toast }) 
           </div>
         </div>
 
-        <StudentGrid students={filtered} classes={classes} view={view} onDelete={delStudent} />
+        <StudentGrid students={filtered} classes={classes} view={view} onDelete={delStudent} onUploadPhoto={onUploadPhoto} onEdit={openEdit} />
       </div>
 
       {showModal && (
         <Modal
           title="Ajouter un étudiant"
-          onClose={() => setShowModal(false)}
+          onClose={() => { setShowModal(false); setEditStudent(null); }}
           footer={
             <>
-              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-              <button className="btn btn-primary" onClick={() => formRef.current?.requestSubmit()}><Icon name="check" /> Ajouter</button>
+              <button className="btn btn-secondary" onClick={() => { setShowModal(false); setEditStudent(null); }}>Annuler</button>
+              <button className="btn btn-primary" onClick={() => formRef.current?.requestSubmit()}><Icon name="check" /> {editStudent ? "Enregistrer" : "Ajouter"}</button>
             </>
           }
         >
-          <StudentForm ref={formRef} classes={classes} onSubmit={saveStudent} />
+          <StudentForm ref={formRef} classes={classes} initialValue={editStudent} onSubmit={saveStudent} />
         </Modal>
       )}
 
       {showCSV && (
         <Modal
           title="Importer des étudiants (CSV)"
-          onClose={() => { setShowCSV(false); setCsvResult(null); }}
+          onClose={() => { setShowCSV(false); setCsvResult(null); setCsvFile(null); }}
           footer={
             <>
-              <button className="btn btn-secondary" onClick={() => { setShowCSV(false); setCsvResult(null); }}>Fermer</button>
-              {!csvResult && <button className="btn btn-primary" onClick={simulateCSV}><Icon name="upload" /> Importer</button>}
+              <button className="btn btn-secondary" onClick={() => { setShowCSV(false); setCsvResult(null); setCsvFile(null); }}>Fermer</button>
+              {!csvResult && <button className="btn btn-primary" onClick={importCSV}><Icon name="upload" /> Importer</button>}
             </>
           }
         >
-          <CsvImport csvResult={csvResult} />
+          <CsvImport csvResult={csvResult} selectedFileName={csvFile?.name || ""} onFileChange={(event) => setCsvFile(event.target.files?.[0] || null)} />
         </Modal>
       )}
     </div>

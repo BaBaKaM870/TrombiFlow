@@ -23,6 +23,7 @@ class ClassUpdate(BaseModel):
     year: Optional[str] = None
 
 
+@router.get("", include_in_schema=False)
 @router.get("/")
 def get_all():
     return ClassModel.find_all()
@@ -36,6 +37,7 @@ def get_by_id(id: int):
     return cls
 
 
+@router.post("", status_code=201, include_in_schema=False)
 @router.post("/", status_code=201)
 def create(data: ClassCreate):
     try:

@@ -1,5 +1,7 @@
 import threading
-from fastapi import APIRouter, Query, Depends
+from pathlib import Path
+
+from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import HTMLResponse, FileResponse
 from typing import Optional
 
@@ -7,6 +9,7 @@ from ..models.student import StudentModel
 from ..models.class_ import ClassModel
 from ..models.export import ExportModel
 from ..middlewares.auth import get_current_user
+from ..config.storage import UPLOAD_DIR
 from ..services.html_service import generate_trombi_html
 from ..services.pdf_service import generate_pdf
 
@@ -23,6 +26,7 @@ def _log_export(**kwargs):
     threading.Thread(target=_run, daemon=True).start()
 
 
+@router.get("", include_in_schema=False)
 @router.get("/")
 def generate(
     class_id: Optional[int] = Query(None),
@@ -30,12 +34,10 @@ def generate(
     current_user: dict = Depends(get_current_user),
 ):
     if format not in ("html", "pdf"):
-        from fastapi import HTTPException
         raise HTTPException(status_code=400, detail='format must be "html" or "pdf"')
 
     students = StudentModel.find_all(class_id=class_id)
     if not students:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="No students found")
 
     class_label = ""
@@ -62,5 +64,32 @@ def generate(
 
 
 @router.get("/exports")
-def get_exports():
+def get_exports(current_user: dict = Depends(get_current_user)):
     return ExportModel.find_all()
+
+
+@router.get("/exports/{id}/download")
+def download_export(id: int, current_user: dict = Depends(get_current_user)):
+    export = ExportModel.find_by_id(id)
+    if not export:
+        raise HTTPException(status_code=404, detail="Export not found")
+
+    if export.get("format") != "pdf" or not export.get("file_path"):
+        raise HTTPException(status_code=404, detail="No downloadable file for this export")
+
+    file_path = Path(export["file_path"]).resolve()
+    upload_root = Path(UPLOAD_DIR).resolve()
+    if file_path != upload_root and upload_root not in file_path.parents:
+        raise HTTPException(status_code=403, detail="Export file is outside the upload directory")
+
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Export file is missing")
+
+    class_label = export.get("class_label") or "all"
+    safe_label = "".join(ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in class_label)
+    filename = f"trombi-{safe_label}.pdf"
+    return FileResponse(
+        str(file_path),
+        media_type="application/pdf",
+        filename=filename,
+    )

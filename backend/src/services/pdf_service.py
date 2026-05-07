@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 from pathlib import Path
 from reportlab.pdfgen import canvas
@@ -60,11 +59,7 @@ def generate_pdf(students: list[dict], options: dict | None = None) -> str:
         x = MARGIN + col * CELL_W + int((CELL_W - IMG_SIZE) / 2)
         y = start_y() - (row + 1) * CELL_H
 
-        photo_path = None
-        if s.get("photo_url"):
-            candidate = os.path.join(os.getcwd(), s["photo_url"])
-            if os.path.exists(candidate):
-                photo_path = candidate
+        photo_path = _resolve_upload_path(s.get("photo_url"))
 
         if photo_path:
             try:
@@ -102,3 +97,20 @@ def _draw_placeholder(c: canvas.Canvas, x: float, y: float):
     c.setFont("Helvetica", 7)
     c.setFillColorRGB(0.53, 0.53, 0.53)
     c.drawCentredString(x + IMG_SIZE / 2, y + IMG_SIZE / 2 - 4, "photo")
+
+
+def _resolve_upload_path(photo_url: str | None) -> str | None:
+    if not photo_url or photo_url.startswith(("http://", "https://", "data:", "blob:")):
+        return None
+
+    normalized = photo_url.lstrip("/").replace("\\", "/")
+    candidates = [
+        Path(UPLOAD_DIR) / Path(normalized).name,
+        Path.cwd() / normalized,
+    ]
+
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_file():
+            return str(candidate)
+
+    return None

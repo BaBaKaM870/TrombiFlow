@@ -1,4 +1,4 @@
-export default function CsvImport({ csvResult }) {
+export default function CsvImport({ csvResult, selectedFileName, onFileChange }) {
   return (
     <div>
       <div style={{ background: "var(--cream)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontFamily: "monospace", fontSize: 12, color: "var(--muted)" }}>
@@ -8,6 +8,8 @@ export default function CsvImport({ csvResult }) {
         <div className="upload-icon">📄</div>
         <p className="upload-text">Déposez votre fichier <strong>CSV</strong> ici</p>
         <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>Format attendu ci-dessus</p>
+        <input className="form-input" type="file" accept=".csv,text/csv" onChange={onFileChange} style={{ marginTop: 12 }} />
+        {selectedFileName && <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>Fichier sélectionné : {selectedFileName}</p>}
       </div>
       {csvResult && (
         <div className="import-summary">
