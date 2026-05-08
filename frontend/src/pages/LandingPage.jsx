@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Modal from "../components/Modal";
-import esieeLogo from "../images/logo-esiee-it.png";
 import landingImage from "../images/landing-image.png";
+import trombiFlowLogo from "../images/LOGO_TROMBIFLOW.png";
 import cameraIcon from "../images/camera_icone.png";
 import importCsvIcon from "../images/importcsv-icone.png";
 import printerIcon from "../images/imprimante-icone.png";
@@ -11,48 +11,96 @@ const FEATURES = [
   {
     id: 1,
     icon: cameraIcon,
-    title: "Photos nettes",
-    text: "Upload automatique, redimensionnement et apercu en grille.",
+    title: "Photos prêtes",
+    text: "Des profils nets, rangés par classe, avec aperçu immédiat.",
   },
   {
     id: 2,
     icon: importCsvIcon,
-    title: "Import CSV",
-    text: "Ajout rapide d'élèves, contrôle des erreurs et résumé clair.",
+    title: "Import précis",
+    text: "Ajout CSV, contrôles visibles et données propres avant export.",
   },
   {
     id: 3,
     icon: printerIcon,
-    title: "Exports propres",
-    text: "Trombinoscopes HTML ou PDF prêts à imprimer.",
+    title: "Exports soignés",
+    text: "PDF et HTML prêts pour l'impression ou le partage interne.",
   },
   {
     id: 4,
     icon: rgpdIcon,
-    title: "RGPD et sécurité",
-    text: "Accès réservé, données scolaires protégées.",
+    title: "Accès sécurisé",
+    text: "Un espace réservé aux équipes, pensé pour les données scolaires.",
   },
 ];
 
-const HOW_IT_WORKS = [
+const WORKFLOW = [
+  { id: "01", title: "Organiser", text: "Créez les classes et gardez l'année scolaire claire." },
+  { id: "02", title: "Centraliser", text: "Ajoutez les étudiants, emails et photos au même endroit." },
+  { id: "03", title: "Composer", text: "Prévisualisez le rendu classe par classe sans perdre le fil." },
+  { id: "04", title: "Exporter", text: "Générez un trombinoscope propre en quelques secondes." },
+];
+
+const SPOTLIGHTS = [
+  "Vue par classe",
+  "Photos uniformisées",
+  "Historique des exports",
+  "Gestion rapide",
+];
+
+const COMPARISON = [
   {
-    id: 1,
-    title: "Créez vos classes",
-    text: "Ajoutez les classes, années et sections en quelques clics.",
+    label: "Avant",
+    title: "Des fichiers dispersés",
+    items: [
+      "Photos envoyées par plusieurs canaux",
+      "CSV à corriger à la main",
+      "Mises en page à refaire pour chaque classe",
+    ],
   },
   {
-    id: 2,
-    title: "Ajoutez vos élèves",
-    text: "Import CSV ou ajout manuel, photos et emails centralisés.",
-  },
-  {
-    id: 3,
-    title: "Générez le trombinoscope",
-    text: "Choisissez le format HTML ou PDF et exportez en un instant.",
+    label: "Avec TrombiFlow",
+    title: "Un flux clair et centralisé",
+    items: [
+      "Classes, étudiants et photos au même endroit",
+      "Contrôles visibles avant export",
+      "Trombinoscopes prêts à partager ou imprimer",
+    ],
   },
 ];
 
-export default function LandingPage({ onEnter, onLogin, onRegister, toast }) {
+const SECURITY_POINTS = [
+  { value: "Accès", label: "Comptes réservés aux utilisateurs autorisés" },
+  { value: "Données", label: "Informations scolaires centralisées dans un espace interne" },
+  { value: "Exports", label: "PDF et HTML générés depuis une base propre" },
+];
+
+const FAQS = [
+  {
+    question: "Qui peut utiliser TrombiFlow ?",
+    answer: "La plateforme est pensée pour les équipes qui gèrent les classes, les étudiants et les exports de trombinoscopes.",
+  },
+  {
+    question: "Peut-on importer un fichier CSV ?",
+    answer: "Oui, l'objectif est de gagner du temps avec un import structuré, puis de vérifier les données avant l'export.",
+  },
+  {
+    question: "Les photos sont-elles obligatoires ?",
+    answer: "Non, elles améliorent le rendu du trombinoscope, mais la base peut rester exploitable même si certains profils sont incomplets.",
+  },
+  {
+    question: "Peut-on exporter le trombinoscope ?",
+    answer: "Oui, TrombiFlow prévoit des exports propres pour l'impression ou le partage interne.",
+  },
+];
+
+export default function LandingPage({ classCount = 0, onEnter, onLogin, onRegister, toast }) {
+  const stats = [
+    { value: String(classCount).padStart(2, "0"), label: classCount > 1 ? "classes actives" : "classe active" },
+    { value: "PDF", label: "export imprimable" },
+    { value: "RGPD", label: "accès contrôlé" },
+  ];
+
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
@@ -63,6 +111,8 @@ export default function LandingPage({ onEnter, onLogin, onRegister, toast }) {
     photo: null,
   });
   const [registerPhotoPreview, setRegisterPhotoPreview] = useState("");
+  const [activeFaq, setActiveFaq] = useState(0);
+  const [pointer, setPointer] = useState({ x: 50, y: 50 });
 
   const openLogin = () => {
     setShowRegister(false);
@@ -74,6 +124,14 @@ export default function LandingPage({ onEnter, onLogin, onRegister, toast }) {
     setShowRegister(true);
   };
 
+  const handleHeroPointerMove = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setPointer({
+      x: ((event.clientX - rect.left) / rect.width) * 100,
+      y: ((event.clientY - rect.top) / rect.height) * 100,
+    });
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!loginForm.email || !loginForm.password) {
@@ -83,7 +141,7 @@ export default function LandingPage({ onEnter, onLogin, onRegister, toast }) {
 
     try {
       await onLogin?.(loginForm);
-      toast?.("Connexion réussie ✓");
+      toast?.("Connexion réussie");
       setShowLogin(false);
       onEnter?.();
     } catch (error) {
@@ -100,7 +158,7 @@ export default function LandingPage({ onEnter, onLogin, onRegister, toast }) {
 
     try {
       await onRegister?.(registerForm);
-      toast?.("Compte créé ✓");
+      toast?.("Compte créé");
       setShowRegister(false);
       onEnter?.();
     } catch (error) {
@@ -140,7 +198,7 @@ export default function LandingPage({ onEnter, onLogin, onRegister, toast }) {
           }
         });
       },
-      { threshold: 0.2, rootMargin: "0px 0px -10% 0px" }
+      { threshold: 0.18, rootMargin: "0px 0px -10% 0px" }
     );
 
     elements.forEach((el) => observer.observe(el));
@@ -151,15 +209,17 @@ export default function LandingPage({ onEnter, onLogin, onRegister, toast }) {
   return (
     <div className="landing-shell" id="top">
       <header className="landing-nav">
-        <div className="landing-brand">
-          <div className="landing-brand-title">Trombi<span>scope</span></div>
-          <div className="landing-logo-wrap">
-            {/* <img className="landing-logo" src={esieeLogo} alt="ESIEE-IT" /> */}
+        <a className="landing-brand" href="#top" aria-label="Accueil TrombiFlow">
+          <img className="landing-brand-logo" src={trombiFlowLogo} alt="" aria-hidden="true" />
+          <div className="landing-brand-text">
+            <div className="landing-brand-title">Trombi<span>Flow</span></div>
+          
           </div>
-        </div>
+        </a>
         <nav className="landing-nav-links">
           <a className="link-underline" href="#features">Fonctionnalités</a>
-          <a className="link-underline" href="#how-it-works">Comment ça marche</a>
+          <a className="link-underline" href="#workflow">Workflow</a>
+          <a className="link-underline" href="#security">Sécurité</a>
           <a className="link-underline" href="#contact">Contact</a>
         </nav>
         <div className="landing-nav-actions">
@@ -168,102 +228,232 @@ export default function LandingPage({ onEnter, onLogin, onRegister, toast }) {
         </div>
       </header>
 
-      <section className="landing-hero">
-        <div className="landing-hero-copy">
-          <span className="landing-badge">Plateforme interne</span>
-          <h1 className="landing-hero-title">
-            Bienvenue dans le trombinoscope de l'<span>ESIEE-IT</span>
-          </h1>
-          <p className="landing-hero-sub">
-            Centralisez classes, élèves et photos en un seul espace.
-            Générez vos trombinoscopes en quelques secondes, sans stress.
-          </p>
-          <div className="landing-hero-actions">
-            <button className="btn btn-primary" type="button" onClick={openRegister}>S'inscrire</button>
-            <button className="btn btn-secondary" type="button" onClick={onEnter}>Découvrir le tableau de bord</button>
-          </div>
-          <div className="landing-hero-meta">
-            <span className="landing-meta-chip motion-ripple">Accès sécurisé</span>
-            <span className="landing-meta-chip motion-ripple">RGPD</span>
-            <span className="landing-meta-chip motion-ripple">Gestion simple</span>
-          </div>
-        </div>
+      <main>
+        <section
+          className="landing-hero"
+          onPointerMove={handleHeroPointerMove}
+          style={{ "--pointer-x": `${pointer.x}%`, "--pointer-y": `${pointer.y}%` }}
+        >
+          <img className="landing-hero-bg" src={landingImage} alt="" aria-hidden="true" />
+          <div className="landing-hero-grid" aria-hidden="true" />
+          <div className="landing-hero-shine" aria-hidden="true" />
 
-        <div className="landing-hero-visual">
-          <div className="landing-preview-card motion-elevate">
-            <div className="landing-preview-header">
-              <div>
-                <div className="landing-preview-title">Centralisez, gérez, imprimez</div>
-                <div className="landing-preview-sub">Classes · Élèves · Exports</div>
-              </div>
-              <span className="badge badge-coral">2025-2026</span>
-            </div>
-
-            <div className="landing-preview-image-wrap">
-              <img className="landing-preview-image" src={landingImage} alt="Aperçu du trombinoscope" />
+          <div className="landing-hero-content">
+            <div className="landing-kicker">Plateforme interne ESIEE-IT</div>
+            <h1 className="landing-hero-title">
+              <img className="landing-hero-logo" src={trombiFlowLogo} alt="" aria-hidden="true" />
+              <span className="brand-wordmark">Trombi<span className="brand-accent">Flow</span></span>
+            </h1>
+            <p className="landing-hero-sub">
+              Le cockpit élégant pour centraliser les classes, les étudiants et les photos,
+              puis produire des trombinoscopes impeccables sans friction.
+            </p>
+            <div className="landing-hero-actions">
+              <button className="btn btn-primary" type="button" onClick={openRegister}>S'inscrire</button>
+              <button className="btn btn-secondary" type="button" onClick={onEnter}>Découvrir le tableau de bord</button>
             </div>
           </div>
-        </div>
-      </section>
 
-      <section className="landing-features" id="features">
-        <div className="landing-section-head reveal" style={{ "--reveal-delay": "0ms" }}>
-          <div>
-            <div className="landing-section-title">Pensé pour les écoles</div>
-            <div className="landing-section-sub">Des outils simples pour des trombinoscopes impeccables.</div>
-          </div>
-        </div>
-        {FEATURES.map((f, idx) => (
-          <div
-            className="landing-feature-card reveal motion-elevate"
-            key={f.id}
-            style={{ "--reveal-delay": `${idx * 90}ms` }}
-          >
-            <img className="landing-feature-icon" src={f.icon} alt={f.title} />
-            <div className="landing-feature-title">{f.title}</div>
-            <div className="landing-feature-text">{f.text}</div>
-          </div>
-        ))}
-      </section>
-
-      <section className="landing-how" id="how-it-works">
-        <div className="landing-section-head reveal" style={{ "--reveal-delay": "0ms" }}>
-          <div>
-            <div className="landing-section-title">Comment ça marche</div>
-            <div className="landing-section-sub">Un flux clair pour centraliser et exporter en sécurité.</div>
-          </div>
-        </div>
-        <div className="landing-how-grid">
-          {HOW_IT_WORKS.map((step, idx) => (
-            <div
-              className="landing-how-card reveal motion-elevate"
-              key={step.id}
-              style={{ "--reveal-delay": `${idx * 90}ms` }}
-            >
-              <div className="landing-how-index">0{idx + 1}</div>
-              <div className="landing-how-title">{step.title}</div>
-              <div className="landing-how-text">{step.text}</div>
+          <div className="landing-hero-console" aria-label="Aperçu de l'activité TrombiFlow">
+            <div className="landing-console-top">
+              <span>Trombinoscope 2026</span>
+              <span className="landing-live-dot">Live</span>
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="landing-console-stage">
+              {SPOTLIGHTS.map((label, index) => (
+                <span key={label} style={{ "--spot-delay": `${index * 650}ms` }}>
+                  {label}
+                </span>
+              ))}
+            </div>
+            <div className="landing-console-stats">
+              {stats.map((stat) => (
+                <div className="landing-console-stat" key={stat.label}>
+                  <strong>{stat.value}</strong>
+                  <span>{stat.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-marquee" aria-label="Capacités principales">
+          <div className="landing-marquee-track">
+            {[...SPOTLIGHTS, ...SPOTLIGHTS].map((label, index) => (
+              <span key={`${label}-${index}`}>{label}</span>
+            ))}
+          </div>
+        </section>
+
+        <section className="landing-features" id="features">
+          <div className="landing-section-head reveal">
+            <span className="landing-section-eyebrow">Pensé pour les écoles</span>
+            <h2 className="landing-section-title">Un espace simple, mais très propre.</h2>
+            <p className="landing-section-sub">
+              Chaque action importante reste rapide, lisible et prête pour un vrai usage pédagogique.
+            </p>
+          </div>
+
+          <div className="landing-feature-grid">
+            {FEATURES.map((feature, idx) => (
+              <article
+                className="landing-feature-card reveal"
+                key={feature.id}
+                style={{ "--reveal-delay": `${idx * 80}ms` }}
+              >
+                <img className="landing-feature-icon" src={feature.icon} alt="" aria-hidden="true" />
+                <h3>{feature.title}</h3>
+                <p>{feature.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="landing-workflow" id="workflow">
+          <div className="landing-section-head reveal">
+            <span className="landing-section-eyebrow">Workflow</span>
+            <h2 className="landing-section-title">Du fichier brut au trombinoscope final.</h2>
+            <p className="landing-section-sub">
+              Le parcours reste clair, même quand les classes et les photos se multiplient.
+            </p>
+          </div>
+
+          <div className="landing-workflow-rail">
+            {WORKFLOW.map((step, idx) => (
+              <article
+                className="landing-workflow-step reveal"
+                key={step.id}
+                style={{ "--reveal-delay": `${idx * 90}ms` }}
+              >
+                <span className="landing-workflow-index">{step.id}</span>
+                <h3>{step.title}</h3>
+                <p>{step.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="landing-comparison" id="comparison">
+          <div className="landing-section-head reveal">
+            <span className="landing-section-eyebrow">Avant / Après</span>
+            <h2 className="landing-section-title">Moins de bricolage, plus de fluidité.</h2>
+            <p className="landing-section-sub">
+              TrombiFlow transforme une gestion dispersée en un parcours propre, contrôlé et rapide.
+            </p>
+          </div>
+
+          <div className="landing-comparison-grid">
+            {COMPARISON.map((column, idx) => (
+              <article
+                className={`landing-comparison-card ${idx === 1 ? "is-after" : ""} reveal`}
+                key={column.label}
+                style={{ "--reveal-delay": `${idx * 110}ms` }}
+              >
+                <span>{column.label}</span>
+                <h3>{column.title}</h3>
+                <ul>
+                  {column.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="landing-security" id="security">
+          <div className="landing-security-inner">
+            <div className="landing-section-head reveal">
+              <span className="landing-section-eyebrow">Sécurité & confidentialité</span>
+              <h2 className="landing-section-title">Un projet pensé pour des données sensibles.</h2>
+              <p className="landing-section-sub">
+                Les informations étudiantes restent lisibles, organisées et limitées à un usage interne.
+              </p>
+            </div>
+
+            <div className="landing-security-grid">
+              {SECURITY_POINTS.map((point, idx) => (
+                <article
+                  className="landing-security-item reveal"
+                  key={point.value}
+                  style={{ "--reveal-delay": `${idx * 90}ms` }}
+                >
+                  <strong>{point.value}</strong>
+                  <p>{point.label}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="landing-faq" id="faq">
+          <div className="landing-section-head reveal">
+            <span className="landing-section-eyebrow">FAQ</span>
+            <h2 className="landing-section-title">Les questions avant de commencer.</h2>
+          </div>
+
+          <div className="landing-faq-list">
+            {FAQS.map((item, idx) => {
+              const isOpen = activeFaq === idx;
+
+              return (
+                <article
+                  className={`landing-faq-item ${isOpen ? "is-open" : ""}`}
+                  key={item.question}
+                >
+                  <button
+                    className="landing-faq-question"
+                    type="button"
+                    aria-expanded={isOpen}
+                    aria-controls={`landing-faq-panel-${idx}`}
+                    onClick={() => setActiveFaq(isOpen ? null : idx)}
+                  >
+                    <span>{item.question}</span>
+                    <span className="landing-faq-icon" aria-hidden="true" />
+                  </button>
+                  <div
+                    className="landing-faq-panel"
+                    id={`landing-faq-panel-${idx}`}
+                    role="region"
+                    aria-hidden={!isOpen}
+                  >
+                    <div className="landing-faq-answer">
+                      <p>{item.answer}</p>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="landing-finale reveal">
+          <div className="landing-section-head landing-finale-content">
+            <span className="landing-section-eyebrow">Prêt pour la suite</span>
+            <h2 className="landing-section-title">Lancez l'espace et remplissez la base depuis le site.</h2>
+          </div>
+          <div className="landing-finale-actions">
+            <button className="btn btn-primary" type="button" onClick={openLogin}>Accéder à l'espace</button>
+            <button className="btn btn-blue" type="button" onClick={openRegister}>Créez votre compte TrombiFlow</button>
+          </div>
+        </section>
+      </main>
 
       <footer className="landing-footer" id="contact">
         <div className="landing-footer-grid">
           <div className="landing-footer-col reveal" style={{ "--reveal-delay": "0ms" }}>
             <div className="landing-footer-title-row">
-              <div className="landing-footer-logo-wrap">
-                <img className="landing-footer-logo" src={esieeLogo} alt="ESIEE-IT" />
-              </div>
-              <div className="landing-footer-title">Trombinoscope ESIEE-IT</div>
+              <img className="landing-footer-logo" src={trombiFlowLogo} alt="" aria-hidden="true" />
+              <div className="landing-footer-title">Trombi<span className="brand-accent">Flow</span> ESIEE-IT</div>
             </div>
-            <div className="landing-footer-text">Plateforme interne pour la gestion des classes et des élèves.</div>
+            <div className="landing-footer-text">Plateforme interne pour la gestion des classes et des étudiants.</div>
           </div>
           <div className="landing-footer-col reveal" style={{ "--reveal-delay": "90ms" }}>
             <div className="landing-footer-title">Navigation</div>
             <a className="landing-footer-link link-underline" href="#top">Accueil</a>
             <a className="landing-footer-link link-underline" href="#features">Fonctionnalités</a>
-            <a className="landing-footer-link link-underline" href="#how-it-works">Comment ça marche</a>
+            <a className="landing-footer-link link-underline" href="#workflow">Workflow</a>
+            <a className="landing-footer-link link-underline" href="#faq">FAQ</a>
           </div>
           <div className="landing-footer-col reveal" style={{ "--reveal-delay": "180ms" }}>
             <div className="landing-footer-title">Contact</div>
@@ -272,14 +462,16 @@ export default function LandingPage({ onEnter, onLogin, onRegister, toast }) {
             <div className="landing-footer-text">Campus ESIEE-IT, Pontoise</div>
           </div>
           <div className="landing-footer-col reveal" style={{ "--reveal-delay": "270ms" }}>
-            <div className="landing-footer-title">Aide</div>
-            <a className="landing-footer-link link-underline" href="#how-it-works">Guide rapide</a>
-            <a className="landing-footer-link link-underline" href="#contact">Support</a>
-            <a className="landing-footer-link link-underline" href="mailto:support.trombiflow@esiee-it.fr">Envoyer un email</a>
+            <div className="landing-footer-title">Accès</div>
+            <button className="landing-footer-button" type="button" onClick={openLogin}>Connexion</button>
+            <button className="landing-footer-button" type="button" onClick={openRegister}>Créer un compte</button>
           </div>
         </div>
         <div className="landing-footer-bottom">
-          <span>Projet pédagogique ESIEE-IT · TrombiFlow 2026</span>
+          <span className="landing-footer-brand-line">
+            <img className="landing-footer-mini-logo" src={trombiFlowLogo} alt="" aria-hidden="true" />
+            Projet pédagogique ESIEE-IT · Trombi<span className="brand-accent">Flow</span> 2026
+          </span>
           <span>Données internes uniquement</span>
         </div>
       </footer>

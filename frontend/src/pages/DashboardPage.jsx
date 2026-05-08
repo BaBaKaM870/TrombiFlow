@@ -3,16 +3,16 @@ import { CLASS_COLORS } from "../services/api";
 
 export default function DashboardPage({ classes, students, exports: exportsLog, onDownloadExport }) {
   const stats = [
-    { label: "Classes actives", value: classes.length, icon: "📚", bg: "#fdeae6", change: "+2 cette année" },
-    { label: "Étudiants inscrits", value: students.length, icon: "🎓", bg: "#e8f4fd", change: "+12 ce mois" },
-    { label: "Trombinoscopes générés", value: exportsLog.length, icon: "🖼️", bg: "#e8f8ee", change: "3 cette semaine" },
-    { label: "Stockage utilisé", value: "1.2 GB", icon: "💾", bg: "#f3e8fd", change: "sur 10 GB" },
+    { label: "Classes actives", value: classes.length, icon: "classes", tone: "coral", change: "+2 cette année" },
+    { label: "Étudiants inscrits", value: students.length, icon: "students", tone: "blue", change: "+12 ce mois" },
+    { label: "Trombinoscopes générés", value: exportsLog.length, icon: "generate", tone: "mint", change: "3 cette semaine" },
+    { label: "Stockage utilisé", value: "1.2 GB", icon: "file", tone: "navy", change: "sur 10 GB" },
   ];
 
   const recentStudents = students.slice(-6).reverse();
 
   return (
-    <div className="page">
+    <div className="page dashboard-page">
       <div className="page-header">
         <div>
           <h1 className="page-title">Tableau de bord</h1>
@@ -25,8 +25,8 @@ export default function DashboardPage({ classes, students, exports: exportsLog, 
 
       <div className="stats-grid">
         {stats.map((s, i) => (
-          <div className="stat-card" key={i}>
-            <div className="stat-icon" style={{ background: s.bg, fontSize: 22 }}>{s.icon}</div>
+          <div className={`stat-card stat-card-${s.tone}`} key={i} style={{ "--enter-delay": `${i * 70}ms` }}>
+            <div className="stat-icon"><Icon name={s.icon} size={20} /></div>
             <div className="stat-value">{s.value}</div>
             <div className="stat-label">{s.label}</div>
             <div className="stat-change">{s.change}</div>
@@ -34,7 +34,7 @@ export default function DashboardPage({ classes, students, exports: exportsLog, 
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <div className="dashboard-panels">
         <div className="card">
           <div className="card-header">
             <span className="card-title">Répartition des classes</span>
