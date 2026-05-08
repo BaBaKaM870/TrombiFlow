@@ -26,6 +26,7 @@ import {
   uploadStudentPhoto,
 } from "./services/clientAPI";
 import esieeLogo from "./images/logo-esiee-it.png";
+import trombiFlowLogo from "./images/LOGO_TROMBIFLOW.png";
 import "./styles.css";
 
 export default function App() {
@@ -224,6 +225,7 @@ export default function App() {
     return (
       <>
         <LandingPage
+          classCount={classesView.length}
           onEnter={() => {
             if (!localStorage.getItem("token")) {
               addToast("Connectez-vous d'abord", "error");
@@ -264,7 +266,8 @@ export default function App() {
                 }}
                 aria-label="Aller a la page d'accueil"
               >
-                Trombi<span>scope</span>
+                <img className="sidebar-logo-platform" src={trombiFlowLogo} alt="" aria-hidden="true" />
+                <span className="brand-wordmark">Trombi<span className="brand-accent">Flow</span></span>
               </a>
               <div className="sidebar-logo-wrap">
                 <img className="sidebar-logo-img" src={esieeLogo} alt="ESIEE-IT" />
@@ -292,7 +295,7 @@ export default function App() {
           </div>
         </aside>
 
-        <main className="main">
+        <main className={`main main-${page}`}>
           <div className="topbar">
             <div className="topbar-title">
               {page === "dashboard" && <>Tableau de <span>bord</span></>}
@@ -306,7 +309,7 @@ export default function App() {
                 <input placeholder="Recherche rapide…" />
               </div>
             )}
-            <span className="badge badge-blue" style={{ fontSize: 11, padding: "5px 12px" }}>✦ Session active</span>
+            <span className="badge badge-blue session-badge">Session active</span>
           </div>
 
           {page === "dashboard" && <DashboardPage classes={classesView} students={students} exports={exportsLog} onDownloadExport={handleDownloadExport} />}
