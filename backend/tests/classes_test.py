@@ -28,7 +28,9 @@ class TestPostClasses:
     def test_creates_class_and_returns_201(self):
         with patch("src.routers.classes.ClassModel.create") as mock:
             mock.return_value = {"id": 1, "label": "3B", "year": "2025-2026"}
-            res = client.post("/api/classes/", json={"label": "3B", "year": "2025-2026"})
+            res = client.post(
+                "/api/classes/", json={"label": "3B", "year": "2025-2026"}
+            )
         assert res.status_code == 201
         assert res.json()["label"] == "3B"
 
@@ -47,7 +49,9 @@ class TestPutClasses:
     def test_updates_and_returns_class(self):
         with patch("src.routers.classes.ClassModel.update") as mock:
             mock.return_value = {"id": 1, "label": "3C", "year": "2025-2026"}
-            res = client.put("/api/classes/1", json={"label": "3C", "year": "2025-2026"})
+            res = client.put(
+                "/api/classes/1", json={"label": "3C", "year": "2025-2026"}
+            )
         assert res.status_code == 200
         assert res.json()["label"] == "3C"
 

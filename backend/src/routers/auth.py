@@ -15,7 +15,6 @@ from jose import jwt
 from ..models.user import UserModel
 from ..middlewares.auth import get_current_user
 
-
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 _pwd = CryptContext(schemes=["argon2"], deprecated="auto")
 

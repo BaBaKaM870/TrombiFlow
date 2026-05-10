@@ -12,13 +12,19 @@ def pytest_configure(config):
         sys.path.insert(0, backend_dir)
 
 
-MOCK_USER = {"id": 1, "username": "testuser", "email": "test@school.fr", "role": "teacher"}
+MOCK_USER = {
+    "id": 1,
+    "username": "testuser",
+    "email": "test@school.fr",
+    "role": "teacher",
+}
 
 
 @pytest.fixture(autouse=True)
 def override_auth():
     from src.main import app
     from src.middlewares.auth import get_current_user
+
     app.dependency_overrides[get_current_user] = lambda: MOCK_USER
     yield
     app.dependency_overrides.pop(get_current_user, None)

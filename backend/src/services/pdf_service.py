@@ -5,20 +5,22 @@ from reportlab.lib.pagesizes import A4
 
 from ..config.storage import UPLOAD_DIR
 
-PAGE_W, PAGE_H = A4          # 595.28 x 841.89 pt
-MARGIN   = 30
-COLS     = 5
-CELL_W   = int((PAGE_W - 2 * MARGIN) / COLS)
+PAGE_W, PAGE_H = A4  # 595.28 x 841.89 pt
+MARGIN = 30
+COLS = 5
+CELL_W = int((PAGE_W - 2 * MARGIN) / COLS)
 IMG_SIZE = 75
-CELL_H   = IMG_SIZE + 22
+CELL_H = IMG_SIZE + 22
 FOOTER_H = 40
 
 
 def generate_pdf(students: list[dict], options: dict | None = None) -> str:
     opts = options or {}
-    title       = opts.get("title", "Trombinoscope")
+    title = opts.get("title", "Trombinoscope")
     class_label = opts.get("class_label", "")
-    output_path = str(Path(UPLOAD_DIR) / f"trombi-{int(datetime.now().timestamp() * 1000)}.pdf")
+    output_path = str(
+        Path(UPLOAD_DIR) / f"trombi-{int(datetime.now().timestamp() * 1000)}.pdf"
+    )
 
     c = canvas.Canvas(output_path, pagesize=A4)
 
@@ -47,7 +49,9 @@ def generate_pdf(students: list[dict], options: dict | None = None) -> str:
 
     header_y -= 10  # extra padding
 
-    rows_first = max(1, int((PAGE_H - (PAGE_H - header_y) - MARGIN - FOOTER_H) / CELL_H))
+    rows_first = max(
+        1, int((PAGE_H - (PAGE_H - header_y) - MARGIN - FOOTER_H) / CELL_H)
+    )
     rows_other = max(1, int((PAGE_H - 2 * MARGIN - FOOTER_H) / CELL_H))
 
     page, row, col = 0, 0, 0
@@ -63,7 +67,14 @@ def generate_pdf(students: list[dict], options: dict | None = None) -> str:
 
         if photo_path:
             try:
-                c.drawImage(photo_path, x, y, width=IMG_SIZE, height=IMG_SIZE, preserveAspectRatio=False)
+                c.drawImage(
+                    photo_path,
+                    x,
+                    y,
+                    width=IMG_SIZE,
+                    height=IMG_SIZE,
+                    preserveAspectRatio=False,
+                )
             except Exception:
                 _draw_placeholder(c, x, y)
         else:

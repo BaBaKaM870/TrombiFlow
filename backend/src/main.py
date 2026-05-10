@@ -1,6 +1,3 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,12 +6,15 @@ from fastapi.responses import JSONResponse
 from psycopg2 import errors as pg_errors
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from .config.limiter import limiter
+from dotenv import load_dotenv
+from fastapi import Depends
 
+from .config.limiter import limiter
 from .config.storage import UPLOAD_DIR
 from .middlewares.auth import get_current_user
 from .routers import auth, classes, students, trombi
-from fastapi import Depends
+
+load_dotenv()
 
 app = FastAPI(title="TrombiFlow API", version="1.0.0")
 
@@ -54,12 +54,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(Exception)
 async def global_error_handler(request: Request, exc: Exception):
     if isinstance(exc, pg_errors.UniqueViolation):
-        return JSONResponse(status_code=409, content={"error": "Resource already exists"})
+        return JSONResponse(
+            status_code=409, content={"error": "Resource already exists"}
+        )
     if isinstance(exc, pg_errors.ForeignKeyViolation):
-        return JSONResponse(status_code=400, content={"error": "Referenced resource does not exist"})
+        return JSONResponse(
+            status_code=400, content={"error": "Referenced resource does not exist"}
+        )
     return JSONResponse(status_code=500, content={"error": str(exc)})
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)

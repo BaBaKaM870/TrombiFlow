@@ -20,8 +20,8 @@ router = APIRouter(
 
 ALLOWED_PHOTO_TYPES = {"image/jpeg", "image/png", "image/webp"}
 ALLOWED_PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
-MAX_PHOTO_SIZE = 5 * 1024 * 1024   # 5 MB
-MAX_CSV_SIZE   = 10 * 1024 * 1024  # 10 MB
+MAX_PHOTO_SIZE = 5 * 1024 * 1024  # 5 MB
+MAX_CSV_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 class StudentCreate(BaseModel):
@@ -82,8 +82,13 @@ def remove(id: int):
 @router.post("/{id}/photo")
 async def upload_photo(id: int, photo: UploadFile = File(...)):
     ext = os.path.splitext(photo.filename or "")[1].lower()
-    if photo.content_type not in ALLOWED_PHOTO_TYPES and ext not in ALLOWED_PHOTO_EXTENSIONS:
-        raise HTTPException(status_code=415, detail="Only JPEG, PNG and WebP images are allowed")
+    if (
+        photo.content_type not in ALLOWED_PHOTO_TYPES
+        and ext not in ALLOWED_PHOTO_EXTENSIONS
+    ):
+        raise HTTPException(
+            status_code=415, detail="Only JPEG, PNG and WebP images are allowed"
+        )
 
     content = await photo.read()
     if len(content) > MAX_PHOTO_SIZE:
@@ -94,7 +99,9 @@ async def upload_photo(id: int, photo: UploadFile = File(...)):
         raise HTTPException(status_code=404, detail="Student not found")
 
     ext = ext if ext in ALLOWED_PHOTO_EXTENSIONS else ".jpg"
-    tmp_path = os.path.join(UPLOAD_DIR, f"{int(time.time() * 1000)}-{random.randint(0, 999999)}{ext}")
+    tmp_path = os.path.join(
+        UPLOAD_DIR, f"{int(time.time() * 1000)}-{random.randint(0, 999999)}{ext}"
+    )
 
     with open(tmp_path, "wb") as f:
         f.write(content)

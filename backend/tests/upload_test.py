@@ -18,9 +18,9 @@ class TestPhotoUpload:
         assert res.status_code == 415
 
     def test_returns_404_when_student_does_not_exist(self):
-        with patch("src.routers.students.StudentModel.find_by_id") as mock_find, \
-             patch("src.routers.students.resize_photo") as mock_resize, \
-             patch("builtins.open", MagicMock()):
+        with patch("src.routers.students.StudentModel.find_by_id") as mock_find, patch(
+            "src.routers.students.resize_photo"
+        ) as mock_resize, patch("builtins.open", MagicMock()):
             mock_find.return_value = None
             mock_resize.return_value = "/tmp/photo.jpg"
             res = client.post(
@@ -33,13 +33,23 @@ class TestPhotoUpload:
         fake_photo = tmp_path / "photo.jpg"
         fake_photo.write_bytes(b"fake image data")
 
-        with patch("src.routers.students.StudentModel.find_by_id") as mock_find, \
-             patch("src.routers.students.StudentModel.update_photo") as mock_update, \
-             patch("src.routers.students.resize_photo") as mock_resize, \
-             patch("src.routers.students.UPLOAD_DIR", str(tmp_path)):
-            mock_find.return_value = {"id": 1, "first_name": "Jean", "last_name": "Dupont"}
+        with patch("src.routers.students.StudentModel.find_by_id") as mock_find, patch(
+            "src.routers.students.StudentModel.update_photo"
+        ) as mock_update, patch(
+            "src.routers.students.resize_photo"
+        ) as mock_resize, patch(
+            "src.routers.students.UPLOAD_DIR", str(tmp_path)
+        ):
+            mock_find.return_value = {
+                "id": 1,
+                "first_name": "Jean",
+                "last_name": "Dupont",
+            }
             mock_update.return_value = {
-                "id": 1, "first_name": "Jean", "last_name": "Dupont", "photo_url": "uploads/photo.jpg"
+                "id": 1,
+                "first_name": "Jean",
+                "last_name": "Dupont",
+                "photo_url": "uploads/photo.jpg",
             }
             mock_resize.return_value = str(fake_photo)
             res = client.post(
