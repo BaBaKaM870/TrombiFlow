@@ -6,6 +6,7 @@ script) and applied in alphabetical order.  A ``_migrations`` table is
 created on first run to track which files have already been applied, so the
 script is safe to run on every container start.
 """
+
 import glob
 import os
 from pathlib import Path
@@ -28,14 +29,12 @@ def run() -> None:
     cur = conn.cursor()
 
     # Ensure the tracking table exists.
-    cur.execute(
-        """
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS _migrations (
             filename   TEXT        PRIMARY KEY,
             applied_at TIMESTAMPTZ DEFAULT now()
         )
-        """
-    )
+        """)
 
     migrations_dir = os.path.join(os.path.dirname(__file__), "migrations")
     sql_files = sorted(glob.glob(os.path.join(migrations_dir, "*.sql")))

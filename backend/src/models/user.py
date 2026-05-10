@@ -1,4 +1,4 @@
-from ..config.database import query, query_one
+from ..config.database import query_one
 
 
 class UserModel:

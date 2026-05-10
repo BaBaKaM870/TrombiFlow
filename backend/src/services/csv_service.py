@@ -27,7 +27,9 @@ def process_csv_records(records: list[dict]):
         last_name = (rec.get("last_name") or "").strip()
 
         if not first_name or not last_name:
-            errors.append({"row": row_num, "error": "first_name and last_name are required"})
+            errors.append(
+                {"row": row_num, "error": "first_name and last_name are required"}
+            )
             continue
 
         class_id = None
@@ -48,7 +50,10 @@ def process_csv_records(records: list[dict]):
                     class_cache = None
                 except Exception as e:
                     errors.append(
-                        {"row": row_num, "error": f'Could not create class "{class_label}": {e}'}
+                        {
+                            "row": row_num,
+                            "error": f'Could not create class "{class_label}": {e}',
+                        }
                     )
 
         students.append(

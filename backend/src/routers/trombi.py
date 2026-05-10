@@ -18,11 +18,13 @@ router = APIRouter(prefix="/api/trombi", tags=["trombi"])
 
 def _log_export(**kwargs):
     """Fire-and-forget export log (runs in a daemon thread)."""
+
     def _run():
         try:
             ExportModel.create(**kwargs)
         except Exception as e:
             print(f"[warn] Export log failed: {e}")
+
     threading.Thread(target=_run, daemon=True).start()
 
 
@@ -50,11 +52,15 @@ def generate(
 
     if format == "html":
         html = generate_trombi_html(students, opts)
-        _log_export(class_id=class_id, format="html", file_path=None, generated_by=user_id)
+        _log_export(
+            class_id=class_id, format="html", file_path=None, generated_by=user_id
+        )
         return HTMLResponse(content=html, media_type="text/html; charset=utf-8")
 
     pdf_path = generate_pdf(students, opts)
-    _log_export(class_id=class_id, format="pdf", file_path=pdf_path, generated_by=user_id)
+    _log_export(
+        class_id=class_id, format="pdf", file_path=pdf_path, generated_by=user_id
+    )
     filename = f"trombi-{class_label or 'all'}.pdf"
     return FileResponse(
         pdf_path,
@@ -75,18 +81,24 @@ def download_export(id: int, current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Export not found")
 
     if export.get("format") != "pdf" or not export.get("file_path"):
-        raise HTTPException(status_code=404, detail="No downloadable file for this export")
+        raise HTTPException(
+            status_code=404, detail="No downloadable file for this export"
+        )
 
     file_path = Path(export["file_path"]).resolve()
     upload_root = Path(UPLOAD_DIR).resolve()
     if file_path != upload_root and upload_root not in file_path.parents:
-        raise HTTPException(status_code=403, detail="Export file is outside the upload directory")
+        raise HTTPException(
+            status_code=403, detail="Export file is outside the upload directory"
+        )
 
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="Export file is missing")
 
     class_label = export.get("class_label") or "all"
-    safe_label = "".join(ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in class_label)
+    safe_label = "".join(
+        ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in class_label
+    )
     filename = f"trombi-{safe_label}.pdf"
     return FileResponse(
         str(file_path),

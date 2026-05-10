@@ -9,7 +9,9 @@ client = TestClient(app)
 class TestGetStudents:
     def test_returns_all_students(self):
         with patch("src.routers.students.StudentModel.find_all") as mock:
-            mock.return_value = [{"id": 1, "first_name": "Jean", "last_name": "Dupont", "class_id": 1}]
+            mock.return_value = [
+                {"id": 1, "first_name": "Jean", "last_name": "Dupont", "class_id": 1}
+            ]
             res = client.get("/api/students/")
         assert res.status_code == 200
         assert len(res.json()) == 1
@@ -23,7 +25,9 @@ class TestGetStudents:
 
     def test_filters_by_search_query(self):
         with patch("src.routers.students.StudentModel.find_all") as mock:
-            mock.return_value = [{"id": 2, "first_name": "Marie", "last_name": "Curie", "class_id": 1}]
+            mock.return_value = [
+                {"id": 2, "first_name": "Marie", "last_name": "Curie", "class_id": 1}
+            ]
             res = client.get("/api/students/?q=Marie")
         assert res.status_code == 200
         assert res.json()[0]["first_name"] == "Marie"
@@ -32,8 +36,20 @@ class TestGetStudents:
 class TestPostStudents:
     def test_creates_student_and_returns_201(self):
         with patch("src.routers.students.StudentModel.create") as mock:
-            mock.return_value = {"id": 1, "first_name": "Jean", "last_name": "Dupont", "email": "jean@school.fr"}
-            res = client.post("/api/students/", json={"first_name": "Jean", "last_name": "Dupont", "email": "jean@school.fr"})
+            mock.return_value = {
+                "id": 1,
+                "first_name": "Jean",
+                "last_name": "Dupont",
+                "email": "jean@school.fr",
+            }
+            res = client.post(
+                "/api/students/",
+                json={
+                    "first_name": "Jean",
+                    "last_name": "Dupont",
+                    "email": "jean@school.fr",
+                },
+            )
         assert res.status_code == 201
         assert res.json()["first_name"] == "Jean"
 
@@ -77,11 +93,19 @@ class TestImportStudents:
         assert res.status_code == 422
 
     def test_imports_students_from_valid_csv(self):
-        csv_content = b"first_name,last_name,email,class_label,year\nJean,Dupont,jean@school.fr,3A,2025-2026"
-        with patch("src.services.csv_service.ClassModel.find_all") as mock_classes, \
-             patch("src.routers.students.StudentModel.bulk_create") as mock_create:
+        csv_content = (
+            b"first_name,last_name,email,class_label,year\n"
+            b"Jean,Dupont,jean@school.fr,3A,2025-2026"
+        )
+        with patch(
+            "src.services.csv_service.ClassModel.find_all"
+        ) as mock_classes, patch(
+            "src.routers.students.StudentModel.bulk_create"
+        ) as mock_create:
             mock_classes.return_value = [{"id": 1, "label": "3A", "year": "2025-2026"}]
-            mock_create.return_value = [{"id": 1, "first_name": "Jean", "last_name": "Dupont"}]
+            mock_create.return_value = [
+                {"id": 1, "first_name": "Jean", "last_name": "Dupont"}
+            ]
             res = client.post(
                 "/api/students/import",
                 files={"file": ("students.csv", csv_content, "text/csv")},
@@ -90,7 +114,11 @@ class TestImportStudents:
         assert res.json()["created"] >= 1
 
     def test_returns_errors_for_rows_with_missing_names(self):
-        csv_content = b"first_name,last_name,email\n,Dupont,jean@school.fr\n,Curie,marie@school.fr"
+        csv_content = (
+            b"first_name,last_name,email\n"
+            b",Dupont,jean@school.fr\n"
+            b",Curie,marie@school.fr"
+        )
         res = client.post(
             "/api/students/import",
             files={"file": ("students.csv", csv_content, "text/csv")},

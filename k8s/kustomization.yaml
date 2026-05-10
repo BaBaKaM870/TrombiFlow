@@ -1,0 +1,63 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Namespace pour tous les manifests
+namespace: trombiflow
+
+# Métadonnées communes
+commonLabels:
+  app: trombiflow
+  environment: production
+  managed-by: kustomize
+
+commonAnnotations:
+  deploy.trombiflow.io/version: "1.0"
+
+# Ressources à inclure (ordre d'application)
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - configmap.yaml
+  # secret.yaml N'EST PAS inclus ici (gérer manuellement)
+  - postgres.yaml
+  - minio.yaml
+  - backend.yaml
+  - frontend.yaml
+  - networkpolicy.yaml
+  - ingress.yaml
+  - hpa.yaml
+
+# Variables de substitution pour les images
+images:
+  - name: ghcr.io/babakam870/trombiflow/backend
+    newTag: latest
+  - name: ghcr.io/babakam870/trombiflow/frontend
+    newTag: latest
+  - name: postgres
+    newTag: "15-alpine"
+  - name: minio/minio
+    digest: sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+
+# Replicas customization (pour overlay)
+replicas:
+  - name: backend
+    count: 2
+  - name: frontend
+    count: 2
+
+# ConfigMap generator (alternative)
+configMapGenerator:
+  - name: trombiflow-config
+    files:
+      - configmap.yaml
+    behavior: merge
+
+# Patches pour customisations spécifiques
+patchesStrategicMerge: []
+
+# Vars pour substitution dans les manifests
+vars: []
+
+# Sortie customizée
+sortOptions:
+  order: fifo

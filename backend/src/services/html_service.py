@@ -26,7 +26,9 @@ def generate_trombi_html(students: list[dict], options: dict | None = None) -> s
             src = photo if photo.startswith("http") else f"{base_url}/{photo}"
         else:
             src = f"{base_url}/uploads/placeholder.png"
-        email_line = f'<div class="email">{_esc(s["email"])}</div>' if s.get("email") else ""
+        email_line = (
+            f'<div class="email">{_esc(s["email"])}</div>' if s.get("email") else ""
+        )
         cards.append(f"""
     <div class="card">
       <img src="{_esc(src)}" alt="{_esc(s['first_name'])} {_esc(s['last_name'])}"
@@ -35,7 +37,9 @@ def generate_trombi_html(students: list[dict], options: dict | None = None) -> s
       {email_line}
     </div>""")
 
-    subtitle = f'<p class="subtitle">Classe : {_esc(class_label)}</p>' if class_label else ""
+    subtitle = (
+        f'<p class="subtitle">Classe : {_esc(class_label)}</p>' if class_label else ""
+    )
     return f"""<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -47,12 +51,44 @@ def generate_trombi_html(students: list[dict], options: dict | None = None) -> s
     body {{ font-family: Arial, sans-serif; background: #f0f2f5; padding: 24px; color: #333; }}
     h1 {{ text-align: center; font-size: 1.8rem; margin-bottom: 6px; }}
     .subtitle {{ text-align: center; color: #666; margin-bottom: 24px; }}
-    .grid {{ display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; max-width: 1200px; margin: 0 auto; }}
-    .card {{ background: #fff; border-radius: 10px; padding: 14px 12px 10px; width: 150px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,.1); }}
-    .card img {{ width: 110px; height: 110px; border-radius: 50%; object-fit: cover; background: #ddd; display: block; margin: 0 auto 8px; }}
+    .grid {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }}
+    .card {{
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px 12px 10px;
+      width: 150px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    }}
+    .card img {{
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #ddd;
+      display: block;
+      margin: 0 auto 8px;
+    }}
     .name {{ font-weight: 700; font-size: .8rem; line-height: 1.3; }}
     .email {{ font-size: .7rem; color: #888; margin-top: 4px; word-break: break-all; }}
-    .footer {{ margin: 36px auto 0; max-width: 800px; padding: 14px 20px; background: #e8eaed; border-radius: 6px; font-size: .72rem; color: #555; text-align: center; line-height: 1.6; }}
+    .footer {{
+      margin: 36px auto 0;
+      max-width: 800px;
+      padding: 14px 20px;
+      background: #e8eaed;
+      border-radius: 6px;
+      font-size: .72rem;
+      color: #555;
+      text-align: center;
+      line-height: 1.6;
+    }}
   </style>
 </head>
 <body>

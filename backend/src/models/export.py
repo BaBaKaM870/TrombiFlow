@@ -19,15 +19,13 @@ class ExportModel:
 
     @staticmethod
     def find_all() -> list[dict]:
-        return query(
-            """
+        return query("""
             SELECT e.*, c.label AS class_label, u.username AS generated_by_name
             FROM exports e
             LEFT JOIN classes c ON e.class_id = c.id
             LEFT JOIN users   u ON e.generated_by = u.id
             ORDER BY e.created_at DESC
-            """
-        )
+            """)
 
     @staticmethod
     def find_by_id(id: int) -> dict | None:
