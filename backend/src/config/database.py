@@ -12,9 +12,7 @@ def _get_pool() -> ThreadedConnectionPool:
     if _pool is None:
         dsn = os.environ.get("DATABASE_URL")
         ssl_opts = (
-            {"sslmode": "require"}
-            if os.environ.get("ENV") == "production"
-            else {}
+            {"sslmode": "require"} if os.environ.get("ENV") == "production" else {}
         )
         _pool = ThreadedConnectionPool(
             1, 10, dsn, cursor_factory=RealDictCursor, **ssl_opts

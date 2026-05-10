@@ -9,7 +9,14 @@ from src.middlewares.auth import get_current_user
 
 MOCK_USER = {"id": 1, "username": "testuser", "email": "test@school.fr"}
 MOCK_STUDENTS = [
-    {"id": 1, "first_name": "Jean", "last_name": "Dupont", "email": "jean@school.fr", "class_id": 1, "photo_url": None},
+    {
+        "id": 1,
+        "first_name": "Jean",
+        "last_name": "Dupont",
+        "email": "jean@school.fr",
+        "class_id": 1,
+        "photo_url": None,
+    },
 ]
 
 
@@ -25,8 +32,9 @@ client = TestClient(app)
 
 class TestTrombiHTML:
     def test_returns_200_and_html_document(self):
-        with patch("src.routers.trombi.StudentModel.find_all") as mock_students, \
-             patch("src.routers.trombi.ExportModel.create"):
+        with patch("src.routers.trombi.StudentModel.find_all") as mock_students, patch(
+            "src.routers.trombi.ExportModel.create"
+        ):
             mock_students.return_value = MOCK_STUDENTS
             res = client.get("/api/trombi/?format=html")
         assert res.status_code == 200
@@ -36,9 +44,9 @@ class TestTrombiHTML:
         assert "RGPD" in res.text
 
     def test_includes_class_label_when_class_id_provided(self):
-        with patch("src.routers.trombi.StudentModel.find_all") as mock_students, \
-             patch("src.routers.trombi.ClassModel.find_by_id") as mock_class, \
-             patch("src.routers.trombi.ExportModel.create"):
+        with patch("src.routers.trombi.StudentModel.find_all") as mock_students, patch(
+            "src.routers.trombi.ClassModel.find_by_id"
+        ) as mock_class, patch("src.routers.trombi.ExportModel.create"):
             mock_students.return_value = MOCK_STUDENTS
             mock_class.return_value = {"id": 1, "label": "3A"}
             res = client.get("/api/trombi/?format=html&class_id=1")
@@ -62,9 +70,13 @@ class TestTrombiPDF:
             f.write(b"%PDF-1.4\n%%EOF\n")
             fake_pdf_path = f.name
         try:
-            with patch("src.routers.trombi.StudentModel.find_all") as mock_students, \
-                 patch("src.routers.trombi.generate_pdf") as mock_pdf, \
-                 patch("src.routers.trombi.ExportModel.create"):
+            with patch(
+                "src.routers.trombi.StudentModel.find_all"
+            ) as mock_students, patch(
+                "src.routers.trombi.generate_pdf"
+            ) as mock_pdf, patch(
+                "src.routers.trombi.ExportModel.create"
+            ):
                 mock_students.return_value = MOCK_STUDENTS
                 mock_pdf.return_value = fake_pdf_path
                 res = client.get("/api/trombi/?format=pdf")
