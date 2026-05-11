@@ -10,9 +10,10 @@ from dotenv import load_dotenv
 from fastapi import Depends
 
 from .config.limiter import limiter
-from .config.storage import UPLOAD_DIR
+from .config.storage import UPLOAD_DIR, STORAGE_TYPE
 from .middlewares.auth import get_current_user
 from .routers import auth, classes, students, trombi
+from .services.storage_service import _s3_client, _S3_BUCKET
 
 load_dotenv()
 
@@ -39,6 +40,21 @@ app.include_router(trombi.router)
 @app.get("/api/me")
 def me(current_user: dict = Depends(get_current_user)):
     return current_user
+
+
+@app.get("/api/stats")
+def stats(_: dict = Depends(get_current_user)):
+    storage_bytes = 0
+    if STORAGE_TYPE == "s3":
+        try:
+            s3 = _s3_client()
+            paginator = s3.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=_S3_BUCKET):
+                for obj in page.get("Contents", []):
+                    storage_bytes += obj.get("Size", 0)
+        except Exception:
+            pass
+    return {"storage_bytes": storage_bytes}
 
 
 @app.exception_handler(HTTPException)

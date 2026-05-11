@@ -7,6 +7,7 @@ import time
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from ..config.storage import UPLOAD_DIR
 from ..services.image_service import resize_photo
+from ..services.storage_service import save_photo
 from ..config.limiter import limiter
 
 from pydantic import BaseModel
@@ -109,8 +110,7 @@ async def register_with_photo(
             f.write(content)
 
         try:
-            final_path = resize_photo(tmp_path)
-            photo_url = "uploads/" + os.path.basename(final_path)
+            photo_url = save_photo(tmp_path)
         except Exception:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
