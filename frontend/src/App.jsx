@@ -16,6 +16,7 @@ import {
   getClasses,
   getExports,
   getMe,
+  getStats,
   getStudents,
   importStudentsCSV,
   login,
@@ -36,18 +37,21 @@ export default function App() {
   const [exportsLog, setExportsLog] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [bootstrapping, setBootstrapping] = useState(true);
+  const [storageBytes, setStorageBytes] = useState(null);
   const { toasts, add: addToast } = useToasts();
 
   const reloadData = async () => {
-    const [classesData, studentsData, exportsData] = await Promise.all([
+    const [classesData, studentsData, exportsData, statsData] = await Promise.all([
       getClasses(),
       getStudents(),
       getExports(),
+      getStats().catch(() => null),
     ]);
 
     setClasses(classesData);
     setStudents(studentsData);
     setExportsLog(exportsData);
+    if (statsData) setStorageBytes(statsData.storage_bytes);
   };
 
   useEffect(() => {
@@ -312,7 +316,7 @@ export default function App() {
             <span className="badge badge-blue session-badge">Session active</span>
           </div>
 
-          {page === "dashboard" && <DashboardPage classes={classesView} students={students} exports={exportsLog} onDownloadExport={handleDownloadExport} />}
+          {page === "dashboard" && <DashboardPage classes={classesView} students={students} exports={exportsLog} storageBytes={storageBytes} onDownloadExport={handleDownloadExport} />}
           {page === "classes" && <ClassesPage classes={classesView} students={students} onSaveClass={handleClassSave} onDeleteClass={handleClassDelete} toast={addToast} />}
           {page === "students" && <StudentsPage students={students} classes={classesView} onSaveStudent={handleStudentSave} onDeleteStudent={handleStudentDelete} onImportCsv={handleCsvImport} onUploadPhoto={handleStudentPhotoUpload} toast={addToast} />}
           {page === "generate" && <GeneratePage classes={classesView} students={students} onGenerateTrombi={handleGenerateTrombi} toast={addToast} />}

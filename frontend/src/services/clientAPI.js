@@ -105,6 +105,7 @@ function normalizeClass(cls) {
     id: cls.id,
     label: cls.label,
     year: cls.year || "",
+    createdAt: cls.created_at ?? cls.createdAt ?? "",
   };
 }
 
@@ -159,6 +160,10 @@ export async function registerWithPhoto(formData) {
 
 export async function getMe() {
   return request("/me");
+}
+
+export async function getStats() {
+  return request("/stats");
 }
 
 export async function getClasses() {
