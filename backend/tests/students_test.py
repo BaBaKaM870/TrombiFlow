@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
@@ -104,7 +105,12 @@ class TestImportStudents:
         ) as mock_create:
             mock_classes.return_value = [{"id": 1, "label": "3A", "year": "2025-2026"}]
             mock_create.return_value = [
-                {"id": 1, "first_name": "Jean", "last_name": "Dupont"}
+                {
+                    "id": 1,
+                    "first_name": "Jean",
+                    "last_name": "Dupont",
+                    "created_at": datetime(2026, 5, 19, 12, 0, 0),
+                }
             ]
             res = client.post(
                 "/api/students/import",
@@ -112,6 +118,30 @@ class TestImportStudents:
             )
         assert res.status_code == 201
         assert res.json()["created"] >= 1
+
+    def test_imports_students_from_semicolon_csv(self):
+        csv_content = (
+            b"first_name;last_name;email;class_label;year\n"
+            b"IGUENI;Younes;younesigueni@gamil.com;Bachelor DSNS 3;2025-2026"
+        )
+        with patch(
+            "src.services.csv_service.ClassModel.find_all"
+        ) as mock_classes, patch(
+            "src.routers.students.StudentModel.bulk_create"
+        ) as mock_create:
+            mock_classes.return_value = [
+                {"id": 1, "label": "Bachelor DSNS 3", "year": "2025-2026"}
+            ]
+            mock_create.return_value = [
+                {"id": 1, "first_name": "IGUENI", "last_name": "Younes"}
+            ]
+            res = client.post(
+                "/api/students/import",
+                files={"file": ("students.csv", csv_content, "text/csv")},
+            )
+
+        assert res.status_code == 201
+        assert res.json()["created"] == 1
 
     def test_returns_errors_for_rows_with_missing_names(self):
         csv_content = (

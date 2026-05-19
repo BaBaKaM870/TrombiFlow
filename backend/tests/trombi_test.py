@@ -1,10 +1,12 @@
 import os
 import tempfile
 import pytest
+from pathlib import Path
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from src.main import app
+from src.config.storage import UPLOAD_DIR
 from src.middlewares.auth import get_current_user
 
 MOCK_USER = {"id": 1, "username": "testuser", "email": "test@school.fr"}
@@ -86,3 +88,43 @@ class TestTrombiPDF:
         finally:
             if os.path.exists(fake_pdf_path):
                 os.unlink(fake_pdf_path)
+
+
+class TestTrombiDownload:
+    def test_downloads_saved_html_export(self):
+        export_path = Path(UPLOAD_DIR) / "test-export.html"
+        export_path.write_text("<!DOCTYPE html><html><body>OK</body></html>", encoding="utf-8")
+        try:
+            with patch("src.routers.trombi.ExportModel.find_by_id") as mock_export:
+                mock_export.return_value = {
+                    "id": 1,
+                    "format": "html",
+                    "file_path": str(export_path),
+                    "class_label": "3A",
+                }
+                res = client.get("/api/trombi/exports/1/download")
+
+            assert res.status_code == 200
+            assert "text/html" in res.headers["content-type"]
+            assert "OK" in res.text
+        finally:
+            if export_path.exists():
+                export_path.unlink()
+
+    def test_regenerates_legacy_html_export_without_file_path(self):
+        with patch("src.routers.trombi.ExportModel.find_by_id") as mock_export, patch(
+            "src.routers.trombi.StudentModel.find_all"
+        ) as mock_students:
+            mock_export.return_value = {
+                "id": 2,
+                "format": "html",
+                "file_path": None,
+                "class_id": 1,
+                "class_label": "3A",
+            }
+            mock_students.return_value = MOCK_STUDENTS
+            res = client.get("/api/trombi/exports/2/download")
+
+        assert res.status_code == 200
+        assert "text/html" in res.headers["content-type"]
+        assert "Jean" in res.text
