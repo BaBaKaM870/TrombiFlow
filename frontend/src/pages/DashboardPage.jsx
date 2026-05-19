@@ -123,7 +123,7 @@ export default function DashboardPage({ classes, students, exports: exportsLog, 
                 <td>
                   <button
                     className="btn btn-ghost btn-sm"
-                    disabled={!e.filePath}
+                    disabled={!e.filePath && e.format !== "HTML"}
                     onClick={() => onDownloadExport?.(e)}
                   >
                     <Icon name="download" size={13} /> Télécharger
