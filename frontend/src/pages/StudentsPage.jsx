@@ -4,6 +4,7 @@ import Icon from "../components/Icon";
 import Modal from "../components/Modal";
 import StudentForm from "../components/StudentForm";
 import StudentGrid from "../components/StudentGrid";
+import StudentProfileModal from "../components/StudentProfileModal";
 
 export default function StudentsPage({ students, classes, onSaveStudent, onDeleteStudent, onImportCsv, onUploadPhoto, toast }) {
   const [view, setView] = useState("grid");
@@ -11,6 +12,8 @@ export default function StudentsPage({ students, classes, onSaveStudent, onDelet
   const [filterClass, setFilterClass] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editStudent, setEditStudent] = useState(null);
+  const [profileStudent, setProfileStudent] = useState(null);
+  const [deleteStudent, setDeleteStudent] = useState(null);
   const [showCSV, setShowCSV] = useState(false);
   const [csvResult, setCsvResult] = useState(null);
   const [csvFile, setCsvFile] = useState(null);
@@ -29,21 +32,34 @@ export default function StudentsPage({ students, classes, onSaveStudent, onDelet
   };
 
   const openEdit = (student) => {
-    setEditStudent(student);
-    setShowModal(true);
+    setProfileStudent(student);
   };
 
-  const saveStudent = async (form) => {
+  const saveStudent = async (form, studentId = editStudent?.id || null) => {
     try {
-      await onSaveStudent(form, editStudent?.id || null);
+      await onSaveStudent(form, studentId);
       setShowModal(false);
       setEditStudent(null);
+      setProfileStudent(null);
     } catch (error) {
       toast(error.message || "Impossible d'enregistrer l'etudiant", "error");
     }
   };
 
-  const delStudent = async (id) => { await onDeleteStudent(id); };
+  const askDeleteStudent = (student) => {
+    setDeleteStudent(student);
+  };
+
+  const confirmDeleteStudent = async () => {
+    if (!deleteStudent?.id) return;
+    try {
+      await onDeleteStudent(deleteStudent.id);
+      setDeleteStudent(null);
+      if (profileStudent?.id === deleteStudent.id) setProfileStudent(null);
+    } catch (error) {
+      toast(error.message || "Impossible de supprimer l'etudiant", "error");
+    }
+  };
 
   const importCSV = async () => {
     if (!csvFile) {
@@ -51,10 +67,14 @@ export default function StudentsPage({ students, classes, onSaveStudent, onDelet
       return;
     }
 
-    const result = await onImportCsv(csvFile);
-    setCsvResult({ created: result.created, errors: Array.isArray(result.errors) ? result.errors.length : 0 });
-    setShowCSV(false);
-    setCsvFile(null);
+    try {
+      const result = await onImportCsv(csvFile);
+      setCsvResult({ created: result.created, errors: Array.isArray(result.errors) ? result.errors.length : 0 });
+      setShowCSV(false);
+      setCsvFile(null);
+    } catch (error) {
+      toast(error.message || "Impossible d'importer le fichier CSV", "error");
+    }
   };
 
   return (
@@ -88,7 +108,15 @@ export default function StudentsPage({ students, classes, onSaveStudent, onDelet
           </div>
         </div>
 
-        <StudentGrid students={filtered} classes={classes} view={view} onDelete={delStudent} onUploadPhoto={onUploadPhoto} onEdit={openEdit} />
+        <StudentGrid
+          students={filtered}
+          classes={classes}
+          view={view}
+          onDelete={askDeleteStudent}
+          onUploadPhoto={onUploadPhoto}
+          onEdit={openEdit}
+          onOpen={setProfileStudent}
+        />
       </div>
 
       {showModal && (
@@ -103,6 +131,40 @@ export default function StudentsPage({ students, classes, onSaveStudent, onDelet
           }
         >
           <StudentForm ref={formRef} classes={classes} initialValue={editStudent} onSubmit={saveStudent} />
+        </Modal>
+      )}
+
+      {profileStudent && (
+        <StudentProfileModal
+          student={profileStudent}
+          classes={classes}
+          onClose={() => setProfileStudent(null)}
+          onSave={(form) => saveStudent(form, profileStudent.id)}
+          onAskDelete={askDeleteStudent}
+        />
+      )}
+
+      {deleteStudent && (
+        <Modal
+          title="Confirmer la suppression"
+          onClose={() => setDeleteStudent(null)}
+          className="confirm-modal"
+          footer={
+            <>
+              <button className="btn btn-secondary" onClick={() => setDeleteStudent(null)}>Annuler</button>
+              <button className="btn btn-danger" onClick={confirmDeleteStudent}><Icon name="trash" /> Supprimer</button>
+            </>
+          }
+        >
+          <div className="confirm-delete">
+            <div className="confirm-delete-icon"><Icon name="trash" size={22} /></div>
+            <div>
+              <div className="confirm-delete-title">Supprimer cet etudiant ?</div>
+              <p>
+                Cette action retirera <strong>{deleteStudent.firstName} {deleteStudent.lastName}</strong> de la plateforme.
+              </p>
+            </div>
+          </div>
         </Modal>
       )}
 

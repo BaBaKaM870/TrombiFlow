@@ -1,6 +1,6 @@
 import Icon from "./Icon";
 
-export default function StudentGrid({ students, classes, view, onDelete, onUploadPhoto, onEdit }) {
+export default function StudentGrid({ students, classes, view, onDelete, onUploadPhoto, onEdit, onOpen }) {
   const triggerPhotoUpload = (studentId) => {
     const input = document.getElementById(`student-photo-${studentId}`);
     input?.click();
@@ -19,15 +19,20 @@ export default function StudentGrid({ students, classes, view, onDelete, onUploa
         {students.map(s => {
           const cls = classes.find(c => c.id === s.classId);
           return (
-            <div className="student-card" key={s.id}>
+            <div className="student-card" key={s.id} onClick={() => onOpen?.(s)} role="button" tabIndex={0} onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpen?.(s);
+              }
+            }}>
               <img className="student-photo" src={s.photo} alt={s.firstName} />
               <div className="student-name">{s.firstName}<br />{s.lastName}</div>
               <div className="student-class">{cls?.label || "—"}</div>
               <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 10 }}>
                 <input id={`student-photo-${s.id}`} type="file" accept="image/*" style={{ display: "none" }} onChange={(event) => handlePhotoChange(s.id, event)} />
-                <button className="btn btn-secondary btn-sm" style={{ padding: "4px 8px" }} onClick={() => triggerPhotoUpload(s.id)}><Icon name="upload" size={12} /></button>
-                <button className="btn btn-secondary btn-sm" style={{ padding: "4px 8px" }} onClick={() => onEdit?.(s)}><Icon name="edit" size={12} /></button>
-                <button className="btn btn-ghost btn-sm" style={{ padding: "4px 8px" }} onClick={() => onDelete(s.id)}><Icon name="trash" size={12} /></button>
+                <button className="btn btn-secondary btn-sm" style={{ padding: "4px 8px" }} onClick={(event) => { event.stopPropagation(); triggerPhotoUpload(s.id); }}><Icon name="upload" size={12} /></button>
+                <button className="btn btn-secondary btn-sm" style={{ padding: "4px 8px" }} onClick={(event) => { event.stopPropagation(); onEdit?.(s); }}><Icon name="edit" size={12} /></button>
+                <button className="btn btn-ghost btn-sm" style={{ padding: "4px 8px" }} onClick={(event) => { event.stopPropagation(); onDelete(s); }}><Icon name="trash" size={12} /></button>
               </div>
             </div>
           );
@@ -51,7 +56,7 @@ export default function StudentGrid({ students, classes, view, onDelete, onUploa
         {students.map(s => {
           const cls = classes.find(c => c.id === s.classId);
           return (
-            <tr key={s.id}>
+            <tr key={s.id} className="student-row-clickable" onClick={() => onOpen?.(s)}>
               <td><img src={s.photo} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} /></td>
               <td style={{ fontWeight: 500 }}>{s.firstName} {s.lastName}</td>
               <td style={{ color: "var(--muted)", fontSize: 12 }}>{s.email}</td>
@@ -60,9 +65,9 @@ export default function StudentGrid({ students, classes, view, onDelete, onUploa
               <td>
                 <div style={{ display: "flex", gap: 6 }}>
                   <input id={`student-photo-${s.id}`} type="file" accept="image/*" style={{ display: "none" }} onChange={(event) => handlePhotoChange(s.id, event)} />
-                  <button className="btn btn-secondary btn-sm" onClick={() => triggerPhotoUpload(s.id)}><Icon name="upload" size={12} /> Photo</button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => onEdit?.(s)}><Icon name="edit" size={12} /> Modifier</button>
-                  <button className="btn btn-danger btn-sm" onClick={() => onDelete(s.id)}><Icon name="trash" size={12} /></button>
+                  <button className="btn btn-secondary btn-sm" onClick={(event) => { event.stopPropagation(); triggerPhotoUpload(s.id); }}><Icon name="upload" size={12} /> Photo</button>
+                  <button className="btn btn-secondary btn-sm" onClick={(event) => { event.stopPropagation(); onEdit?.(s); }}><Icon name="edit" size={12} /> Modifier</button>
+                  <button className="btn btn-danger btn-sm" onClick={(event) => { event.stopPropagation(); onDelete(s); }}><Icon name="trash" size={12} /></button>
                 </div>
               </td>
             </tr>

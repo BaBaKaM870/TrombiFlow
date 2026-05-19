@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:open": "vite --open http://localhost:5173",
     "build": "vite build",
     "preview": "vite preview"
   },
