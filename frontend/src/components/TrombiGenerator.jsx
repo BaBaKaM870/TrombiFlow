@@ -62,11 +62,7 @@ export default function TrombiGenerator({ classes, students, onGenerateTrombi, t
         setGeneratedUrl(downloadUrl);
         setProgress(100);
 
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.download = filename;
-        link.click();
-        toast(`Trombinoscope ${selFormat.toUpperCase()} genere`);
+        toast(`Trombinoscope ${selFormat.toUpperCase()} pret`);
       } catch (error) {
         toast(error.message || "Impossible de generer le trombinoscope", "error");
       } finally {

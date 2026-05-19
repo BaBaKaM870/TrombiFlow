@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import ClassForm from "../components/ClassForm";
+import ClassDetailsModal from "../components/ClassDetailsModal";
 import Icon from "../components/Icon";
 import Modal from "../components/Modal";
 import { CLASS_COLORS } from "../services/api";
@@ -7,11 +8,12 @@ import { CLASS_COLORS } from "../services/api";
 export default function ClassesPage({ classes, students, onSaveClass, onDeleteClass, toast }) {
   const [showModal, setShowModal] = useState(false);
   const [editClass, setEditClass] = useState(null);
+  const [detailsClass, setDetailsClass] = useState(null);
   const [search, setSearch] = useState("");
   const formRef = useRef(null);
 
   const openNew = () => { setEditClass(null); setShowModal(true); };
-  const openEdit = (c) => { setEditClass(c); setShowModal(true); };
+  const openEdit = (c) => { setDetailsClass(null); setEditClass(c); setShowModal(true); };
   const save = async (form) => {
     await onSaveClass(form, editClass?.id || null);
     setShowModal(false);
@@ -50,7 +52,7 @@ export default function ClassesPage({ classes, students, onSaveClass, onDeleteCl
             {filtered.map((c, i) => {
               const count = students.filter(s => s.classId === c.id).length || c.count;
               return (
-                <tr key={c.id}>
+                <tr key={c.id} className="class-row-clickable" onClick={() => setDetailsClass(c)}>
                   <td style={{ width: 40 }}>
                     <div style={{ width: 12, height: 12, borderRadius: "50%", background: CLASS_COLORS[i % CLASS_COLORS.length] }} />
                   </td>
@@ -64,8 +66,8 @@ export default function ClassesPage({ classes, students, onSaveClass, onDeleteCl
                   </td>
                   <td>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => openEdit(c)}><Icon name="edit" size={12} /> Modifier</button>
-                      <button className="btn btn-danger btn-sm" onClick={() => del(c.id)}><Icon name="trash" size={12} /></button>
+                      <button className="btn btn-secondary btn-sm" onClick={(event) => { event.stopPropagation(); openEdit(c); }}><Icon name="edit" size={12} /> Modifier</button>
+                      <button className="btn btn-danger btn-sm" onClick={(event) => { event.stopPropagation(); del(c.id); }}><Icon name="trash" size={12} /></button>
                     </div>
                   </td>
                 </tr>
@@ -74,6 +76,15 @@ export default function ClassesPage({ classes, students, onSaveClass, onDeleteCl
           </tbody>
         </table>
       </div>
+
+      {detailsClass && (
+        <ClassDetailsModal
+          classItem={detailsClass}
+          students={students}
+          onClose={() => setDetailsClass(null)}
+          onEdit={openEdit}
+        />
+      )}
 
       {showModal && (
         <Modal
