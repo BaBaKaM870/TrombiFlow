@@ -1,9 +1,9 @@
 import Icon from "./Icon";
 
-export default function Modal({ title, onClose, children, footer }) {
+export default function Modal({ title, onClose, children, footer, className = "" }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
+      <div className={`modal ${className}`}>
         <div className="modal-header">
           <span className="modal-title">{title}</span>
           <button className="btn btn-ghost" style={{ padding: "4px" }} onClick={onClose}>
