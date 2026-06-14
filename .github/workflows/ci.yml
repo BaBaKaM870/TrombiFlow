@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  DEPLOY_ENABLED: true
+  DEPLOY_ENABLED: false
 
 jobs:
   check-versions:
@@ -148,7 +148,7 @@ jobs:
   deploy:
     name: Deploy
     needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devops')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Déploiement désactivé par défaut
