@@ -114,10 +114,6 @@ deploy() {
     kubectl apply -f "$K8S_DIR/postgres.yaml"
     print_success "PostgreSQL déployé"
 
-    print_info "Déploiement de MinIO..."
-    kubectl apply -f "$K8S_DIR/minio.yaml"
-    print_success "MinIO déployé"
-
     # 5. Backend et Frontend
     print_info "Déploiement du Backend..."
     kubectl apply -f "$K8S_DIR/backend.yaml"
@@ -146,7 +142,7 @@ deploy() {
 wait_for_pods() {
     print_header "Attente des pods"
 
-    local apps=("postgres" "minio" "backend" "frontend")
+    local apps=("postgres" "backend" "frontend")
 
     for app in "${apps[@]}"; do
         print_info "Attente de $app..."
