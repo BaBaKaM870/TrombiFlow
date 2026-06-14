@@ -17,7 +17,6 @@ resources:
   - configmap.yaml
   # secret.yaml N'EST PAS inclus ici (gérer manuellement ou via sealed-secrets)
   - postgres.yaml
-  - minio.yaml
   - backend.yaml
   - frontend.yaml
   - networkpolicy.yaml
@@ -31,8 +30,6 @@ images:
     newTag: latest
   - name: postgres
     newTag: "15-alpine"
-  - name: minio/minio
-    digest: sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
 
 replicas:
   - name: backend
