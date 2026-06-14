@@ -244,7 +244,8 @@ def _draw_footer(c: canvas.Canvas, page_number: int, generated_at: datetime):
     c.drawString(
         MARGIN_X,
         16,
-        f"Donnees personnelles - Conformite RGPD. Genere le {generated_at.strftime('%d/%m/%Y')} par TrombiFlow.",
+        f"Donnees personnelles - Conformite RGPD."
+        f" Genere le {generated_at.strftime('%d/%m/%Y')} par TrombiFlow.",
     )
     c.drawRightString(PAGE_W - MARGIN_X, 16, f"Page {page_number}")
 

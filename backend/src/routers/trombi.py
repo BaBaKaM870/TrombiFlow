@@ -107,12 +107,13 @@ def download_export(id: int, current_user: dict = Depends(get_current_user)):
             students,
             {"title": "Trombinoscope", "class_label": export.get("class_label") or ""},
         )
+        cd_header = (
+            f'attachment; filename="{_safe_export_filename(class_label, "html")}"'
+        )
         return Response(
             content=html,
             media_type="text/html; charset=utf-8",
-            headers={
-                "Content-Disposition": f'attachment; filename="{_safe_export_filename(class_label, "html")}"'
-            },
+            headers={"Content-Disposition": cd_header},
         )
 
     if not export.get("file_path"):
