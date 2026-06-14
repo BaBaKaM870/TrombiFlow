@@ -65,7 +65,7 @@ TrombiFlow est une application web conteneurisée qui permet à l'administration
 | **Frontend** | React 18 · Vite · Node.js 20-alpine |
 | **Base de données** | PostgreSQL 15-alpine |
 | **Stockage fichiers** | Local `/uploads` ou S3/MinIO |
-| **Génération PDF** | WeasyPrint / wkhtmltopdf |
+| **Génération PDF** | ReportLab |
 | **Conteneurisation** | Docker multi-stage · Docker Compose |
 | **Orchestration** | Docker Compose · Kubernetes (manifests) |
 | **CI/CD** | GitHub Actions (test → build → deploy) |
@@ -115,12 +115,18 @@ trombi-connecte/
 git clone https://github.com/BaBaKaM870/TrombiFlow.git
 cd TrombiFlow
 
-# 2. Copier le fichier d'environnement
-cp .env.example .env
+# 2. Copier le fichier d'environnement et l'éditer
+cp .env.example .env   # Linux/Mac
+# copy .env.example .env   # Windows
 
 # 3. Lancer toute la stack
 docker compose up -d
 ```
+
+> **Important** : avant de lancer, ouvrez `.env` et renseignez au minimum :
+> - `DATABASE_URL` → remplacez les valeurs par défaut. Le hostname doit être `db` (nom du service Docker), ex : `postgresql://trombiflow:monmdp@db:5432/trombiflow`
+> - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` → doivent correspondre à ceux de `DATABASE_URL`
+> - `JWT_SECRET` → chaîne aléatoire d'au moins 32 caractères
 
 L'application sera disponible sur :
 - **Frontend** → http://localhost:5173
@@ -134,24 +140,24 @@ L'application sera disponible sur :
 Copiez `.env.example` en `.env` et renseignez les valeurs :
 
 ```env
-# Base de données
-DATABASE_URL=postgresql://user:password@localhost:5432/trombiflow
+# Base de données — hostname = nom du service docker-compose (db)
+DATABASE_URL=postgresql://trombiflow:monmdp@db:5432/trombiflow
+POSTGRES_DB=trombiflow
+POSTGRES_USER=trombiflow
+POSTGRES_PASSWORD=monmdp
 
 # Stockage (local ou s3)
 STORAGE_TYPE=local
-UPLOAD_DIR=uploads
+UPLOAD_DIR=/data/uploads
 
-# S3/MinIO (si stockage S3)
+# S3/MinIO (si STORAGE_TYPE=s3)
 S3_BUCKET=trombiflow
 S3_ENDPOINT=http://minio:9000
 S3_KEY=minioadmin
 S3_SECRET=minioadmin
 
-# Génération PDF
-PDF_ENGINE=weasyprint   # ou wkhtmltopdf
-
-# Auth JWT (optionnel)
-JWT_SECRET=change_me_in_production
+# Auth JWT — minimum 32 caractères
+JWT_SECRET=change_me_in_production_minimum_32_chars
 
 # Serveur
 PORT=8000
@@ -228,54 +234,45 @@ Jean,Dupont,jean.dupont@school.fr,3A,2025,
 ##  Tests
 
 ```bash
-# Depuis la racine du projet, tout lancer en une seule commande (Bash/Git Bash)
-(cd backend && npm test -- --watchAll=false) && (cd ../frontend && CI=true npm test -- --watchAll=false)
-
-#Sur le terminal de VSC :
-Set-Location backend; npm test -- --watchAll=false; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
-
-# Lancer tous les tests backend
-cd backend && npm test
-
-# Lancer les tests frontend
-cd frontend && npm test
-
-# Avec couverture de code
-npm run test:coverage
+# Tests backend (pytest)
+cd backend
+pip install -r requirements.txt
+python -m pytest -q tests/
 ```
 
 ```powershell
-# Depuis la racine du projet, tout lancer en une seule commande (PowerShell Windows)
-Set-Location backend; npm test -- --watchAll=false; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
+# Tests backend sous Windows PowerShell
+Set-Location backend
+python -m pytest -q tests/
 ```
 
-> Sous Windows PowerShell, utilise le bloc `powershell` ci-dessus.
-> La ligne `CI=true ...` du bloc `bash` ne fonctionne pas en PowerShell.
-
-Les tests couvrent : création classe/élève, import CSV (happy path + erreurs), upload photo → vignette générée, génération trombi HTML (statut 200) et PDF (fichier non vide).
+Les tests couvrent : upload photo, validation type MIME, étudiant non trouvé (404), import CSV, génération trombinoscope HTML et PDF.
 
 ---
 
 ##  CI/CD
 
-Le pipeline GitHub Actions se déclenche à chaque push et comprend 3 jobs :
+Le pipeline GitHub Actions se déclenche à chaque push sur `main` ou `devops` et comprend 5 jobs :
 
 ```
-test ──► build ──► deploy
+check-versions ──► test-backend ──► test-frontend ──► build ──► deploy
 ```
 
-- **test** : installation des dépendances + exécution des tests
-- **build** : construction des images Docker + push sur GHCR
-- **deploy** : déploiement via SSH (`docker compose pull && up -d`)
+- **check-versions** : vérifie que toutes les dépendances sont épinglées (`==`)
+- **test-backend** : Black, Flake8, pytest
+- **test-frontend** : ESLint, Prettier (via conteneur Docker Node)
+- **build** : construction des images Docker backend + frontend, push sur GHCR (tag = SHA du commit)
+- **deploy** : désactivé par défaut (`DEPLOY_ENABLED: false`) — structure SSH prête pour un futur serveur
 
-Secrets à configurer dans GitHub → Settings → Secrets :
+Secrets à configurer dans GitHub → Settings → Secrets (uniquement si deploy activé) :
 
 ```
-REGISTRY_USER      # Identifiant Docker Hub / GHCR
-REGISTRY_TOKEN     # Token d'accès registry
 SSH_HOST           # IP du serveur de déploiement
-SSH_KEY            # Clé SSH privée
+SSH_USER           # Utilisateur SSH
+SSH_KEY            # Clé SSH privée (ed25519 recommandé)
 ```
+
+> `GITHUB_TOKEN` est injecté automatiquement par GitHub Actions pour le push GHCR — aucune configuration manuelle nécessaire.
 
 ---
 
