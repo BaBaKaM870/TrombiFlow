@@ -6,7 +6,18 @@ from ..models.class_ import ClassModel
 
 def parse_csv(content: bytes) -> list[dict]:
     text = content.decode("utf-8-sig")
-    reader = csv.DictReader(io.StringIO(text))
+    sample = text[:2048]
+    csv_options = {}
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=",;")
+        csv_options["dialect"] = dialect
+    except csv.Error:
+        first_line = text.splitlines()[0] if text.splitlines() else ""
+        csv_options["delimiter"] = ";" if first_line.count(";") > first_line.count(",") else ","
+
+    reader = csv.DictReader(io.StringIO(text), **csv_options)
+    if reader.fieldnames:
+        reader.fieldnames = [name.strip() for name in reader.fieldnames]
     return [row for row in reader]
 
 

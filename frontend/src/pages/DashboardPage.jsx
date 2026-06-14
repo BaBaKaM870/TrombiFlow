@@ -1,12 +1,30 @@
 import Icon from "../components/Icon";
 import { CLASS_COLORS } from "../services/api";
 
-export default function DashboardPage({ classes, students, exports: exportsLog, onDownloadExport }) {
+function formatBytes(bytes) {
+  if (bytes === null) return "—";
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} Go`;
+}
+
+export default function DashboardPage({ classes, students, exports: exportsLog, storageBytes, onDownloadExport }) {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+
+  const classesThisYear = classes.filter(c => c.createdAt && new Date(c.createdAt) >= startOfYear).length;
+  const studentsThisMonth = students.filter(s => s.createdAt && new Date(s.createdAt) >= startOfMonth).length;
+  const exportsThisWeek = exportsLog.filter(e => e.date && new Date(e.date) >= startOfWeek).length;
+
   const stats = [
-    { label: "Classes actives", value: classes.length, icon: "classes", tone: "coral", change: "+2 cette année" },
-    { label: "Étudiants inscrits", value: students.length, icon: "students", tone: "blue", change: "+12 ce mois" },
-    { label: "Trombinoscopes générés", value: exportsLog.length, icon: "generate", tone: "mint", change: "3 cette semaine" },
-    { label: "Stockage utilisé", value: "1.2 GB", icon: "file", tone: "navy", change: "sur 10 GB" },
+    { label: "Classes actives", value: classes.length, icon: "classes", tone: "coral", change: classesThisYear > 0 ? `+${classesThisYear} cette année` : "Aucune cette année" },
+    { label: "Étudiants inscrits", value: students.length, icon: "students", tone: "blue", change: studentsThisMonth > 0 ? `+${studentsThisMonth} ce mois` : "Aucun ce mois" },
+    { label: "Trombinoscopes générés", value: exportsLog.length, icon: "generate", tone: "mint", change: exportsThisWeek > 0 ? `${exportsThisWeek} cette semaine` : "Aucun cette semaine" },
+    { label: "Stockage utilisé", value: formatBytes(storageBytes), icon: "file", tone: "navy", change: storageBytes !== null ? `sur 1 Go (${((storageBytes / (1024 * 1024 * 1024)) * 100).toFixed(1)} %)` : "Supabase Storage" },
   ];
 
   const recentStudents = students.slice(-6).reverse();
@@ -105,7 +123,7 @@ export default function DashboardPage({ classes, students, exports: exportsLog, 
                 <td>
                   <button
                     className="btn btn-ghost btn-sm"
-                    disabled={!e.filePath}
+                    disabled={!e.filePath && e.format !== "HTML"}
                     onClick={() => onDownloadExport?.(e)}
                   >
                     <Icon name="download" size={13} /> Télécharger
