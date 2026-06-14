@@ -63,8 +63,8 @@ TrombiFlow est une application web conteneurisée qui permet à l'administration
 |--------|-------------|
 | **Backend** | Python 3.11 · FastAPI · uvicorn |
 | **Frontend** | React 18 · Vite · Node.js 20-alpine |
-| **Base de données** | PostgreSQL 15-alpine |
-| **Stockage fichiers** | Local `/uploads` ou S3/MinIO |
+| **Base de données** | Supabase (PostgreSQL) |
+| **Stockage fichiers** | Supabase Storage (S3-compatible) |
 | **Génération PDF** | ReportLab |
 | **Conteneurisation** | Docker multi-stage · Docker Compose |
 | **Orchestration** | Docker Compose · Kubernetes (manifests) |
@@ -115,23 +115,16 @@ trombi-connecte/
 git clone https://github.com/BaBaKaM870/TrombiFlow.git
 cd TrombiFlow
 
-# 2. Copier le fichier d'environnement et l'éditer
-cp .env.example .env   # Linux/Mac
-# copy .env.example .env   # Windows
+# 2. Copier le fichier d'environnement
+cp .env.example .env
 
 # 3. Lancer toute la stack
 docker compose up -d
 ```
 
-> **Important** : avant de lancer, ouvrez `.env` et renseignez au minimum :
-> - `DATABASE_URL` → remplacez les valeurs par défaut. Le hostname doit être `db` (nom du service Docker), ex : `postgresql://trombiflow:monmdp@db:5432/trombiflow`
-> - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` → doivent correspondre à ceux de `DATABASE_URL`
-> - `JWT_SECRET` → chaîne aléatoire d'au moins 32 caractères
-
 L'application sera disponible sur :
 - **Frontend** → http://localhost:5173
-- **API Backend** -> http://localhost:8000
-- **MinIO Console** → http://localhost:9001 *(si activé)*
+- **API Backend** → http://localhost:8000
 
 ---
 
@@ -140,27 +133,26 @@ L'application sera disponible sur :
 Copiez `.env.example` en `.env` et renseignez les valeurs :
 
 ```env
-# Base de données — hostname = nom du service docker-compose (db)
-DATABASE_URL=postgresql://trombiflow:monmdp@db:5432/trombiflow
-POSTGRES_DB=trombiflow
-POSTGRES_USER=trombiflow
-POSTGRES_PASSWORD=monmdp
+# Base de données (Supabase)
+DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
 
-# Stockage (local ou s3)
-STORAGE_TYPE=local
-UPLOAD_DIR=/data/uploads
-
-# S3/MinIO (si STORAGE_TYPE=s3)
-S3_BUCKET=trombiflow
-S3_ENDPOINT=http://minio:9000
-S3_KEY=minioadmin
-S3_SECRET=minioadmin
-
-# Auth JWT — minimum 32 caractères
-JWT_SECRET=change_me_in_production_minimum_32_chars
-
-# Serveur
+# Backend
+ENV=development
 PORT=8000
+BACKEND_PORT=8000
+JWT_SECRET=change_me_with_a_long_random_secret_min_32_characters
+
+# Frontend
+FRONTEND_PORT=5173
+VITE_API_BASE_URL=http://localhost:8000/api
+
+# Stockage Supabase Storage (S3-compatible)
+STORAGE_TYPE=s3
+S3_BUCKET=trombiflow
+S3_ENDPOINT=https://[ref].supabase.co/storage/v1/s3
+S3_REGION=eu-west-1
+S3_KEY=your_s3_access_key
+S3_SECRET=your_s3_secret_key
 ```
 
 ---
@@ -234,19 +226,25 @@ Jean,Dupont,jean.dupont@school.fr,3A,2025,
 ##  Tests
 
 ```bash
-# Tests backend (pytest)
+# Tests backend (Python/pytest)
 cd backend
 pip install -r requirements.txt
-python -m pytest -q tests/
+pytest
+
+# Tests frontend (Jest)
+cd frontend
+npm install
+CI=true npm test -- --watchAll=false
 ```
 
 ```powershell
-# Tests backend sous Windows PowerShell
-Set-Location backend
-python -m pytest -q tests/
+# Depuis la racine du projet (PowerShell Windows)
+Set-Location backend; pytest; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
 ```
 
-Les tests couvrent : upload photo, validation type MIME, étudiant non trouvé (404), import CSV, génération trombinoscope HTML et PDF.
+> Sous Windows PowerShell, utilise le bloc `powershell` ci-dessus.
+
+Les tests couvrent : création classe/élève, import CSV (happy path + erreurs), upload photo → vignette générée, génération trombi HTML (statut 200) et PDF (fichier non vide).
 
 ---
 
@@ -269,7 +267,7 @@ Secrets à configurer dans GitHub → Settings → Secrets (uniquement si deploy
 ```
 SSH_HOST           # IP du serveur de déploiement
 SSH_USER           # Utilisateur SSH
-SSH_KEY            # Clé SSH privée (ed25519 recommandé)
+SSH_KEY            # Clé SSH privée
 ```
 
 > `GITHUB_TOKEN` est injecté automatiquement par GitHub Actions pour le push GHCR — aucune configuration manuelle nécessaire.
