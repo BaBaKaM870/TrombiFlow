@@ -11,7 +11,7 @@ from ..models.student import StudentModel
 from ..config.storage import UPLOAD_DIR
 from ..services.storage_service import save_photo
 from ..services.csv_service import parse_csv, process_csv_records
-from ..middlewares.auth import get_current_user
+from ..middlewares.auth import get_current_user, require_admin
 
 router = APIRouter(
     prefix="/api/students",
@@ -60,14 +60,14 @@ def get_by_id(id: int):
 
 @router.post("", status_code=201, include_in_schema=False)
 @router.post("/", status_code=201)
-def create(data: StudentCreate):
+def create(data: StudentCreate, _: dict = Depends(require_admin)):
     return StudentModel.create(
         data.first_name, data.last_name, data.email, data.class_id, data.photo_url
     )
 
 
 @router.put("/{id}")
-def update(id: int, data: StudentUpdate):
+def update(id: int, data: StudentUpdate, _: dict = Depends(require_admin)):
     s = StudentModel.update(id, data.model_dump(exclude_none=True))
     if not s:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -75,13 +75,17 @@ def update(id: int, data: StudentUpdate):
 
 
 @router.delete("/{id}", status_code=204)
-def remove(id: int):
+def remove(id: int, _: dict = Depends(require_admin)):
     if not StudentModel.delete(id):
         raise HTTPException(status_code=404, detail="Student not found")
 
 
 @router.post("/{id}/photo")
-async def upload_photo(id: int, photo: UploadFile = File(...)):
+async def upload_photo(
+    id: int,
+    photo: UploadFile = File(...),
+    _: dict = Depends(require_admin),
+):
     ext = os.path.splitext(photo.filename or "")[1].lower()
     if (
         photo.content_type not in ALLOWED_PHOTO_TYPES
@@ -118,7 +122,7 @@ async def upload_photo(id: int, photo: UploadFile = File(...)):
 
 
 @router.post("/import", status_code=201)
-async def import_csv(file: UploadFile = File(...)):
+async def import_csv(file: UploadFile = File(...), _: dict = Depends(require_admin)):
     content = await file.read()
     if len(content) > MAX_CSV_SIZE:
         raise HTTPException(status_code=413, detail="File too large (max 10 MB)")

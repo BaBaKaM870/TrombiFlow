@@ -112,7 +112,6 @@ export default function LandingPage({ classCount = 0, onEnter, onLogin, onRegist
   });
   const [registerPhotoPreview, setRegisterPhotoPreview] = useState("");
   const [activeFaq, setActiveFaq] = useState(0);
-  const [pointer, setPointer] = useState({ x: 50, y: 50 });
 
   const openLogin = () => {
     setShowRegister(false);
@@ -124,13 +123,6 @@ export default function LandingPage({ classCount = 0, onEnter, onLogin, onRegist
     setShowRegister(true);
   };
 
-  const handleHeroPointerMove = (event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setPointer({
-      x: ((event.clientX - rect.left) / rect.width) * 100,
-      y: ((event.clientY - rect.top) / rect.height) * 100,
-    });
-  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -229,11 +221,7 @@ export default function LandingPage({ classCount = 0, onEnter, onLogin, onRegist
       </header>
 
       <main>
-        <section
-          className="landing-hero"
-          onPointerMove={handleHeroPointerMove}
-          style={{ "--pointer-x": `${pointer.x}%`, "--pointer-y": `${pointer.y}%` }}
-        >
+        <section className="landing-hero">
           <img className="landing-hero-bg" src={landingImage} alt="" aria-hidden="true" />
           <div className="landing-hero-grid" aria-hidden="true" />
           <div className="landing-hero-shine" aria-hidden="true" />
@@ -543,6 +531,7 @@ export default function LandingPage({ classCount = 0, onEnter, onLogin, onRegist
                 onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
               />
             </div>
+            {/* Role removed from signup: new users are teacher by default */}
             <div className="form-group">
               <label className="form-label">Photo (optionnel)</label>
               <input

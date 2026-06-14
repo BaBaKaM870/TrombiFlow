@@ -9,7 +9,7 @@ from src.main import app
 from src.config.storage import UPLOAD_DIR
 from src.middlewares.auth import get_current_user
 
-MOCK_USER = {"id": 1, "username": "testuser", "email": "test@school.fr"}
+MOCK_USER = {"id": 1, "username": "testuser", "email": "test@school.fr", "role": "admin"}
 MOCK_STUDENTS = [
     {
         "id": 1,
@@ -130,3 +130,31 @@ class TestTrombiDownload:
         assert res.status_code == 200
         assert "text/html" in res.headers["content-type"]
         assert "Jean" in res.text
+
+
+class TestTrombiDelete:
+    def test_deletes_export_and_saved_file(self):
+        export_path = Path(UPLOAD_DIR) / "delete-export.html"
+        export_path.write_text("<!DOCTYPE html><html><body>OK</body></html>", encoding="utf-8")
+        with patch("src.routers.trombi.ExportModel.find_by_id") as mock_export, patch(
+            "src.routers.trombi.ExportModel.delete"
+        ) as mock_delete:
+            mock_export.return_value = {
+                "id": 3,
+                "format": "html",
+                "file_path": str(export_path),
+                "class_label": "3A",
+            }
+            mock_delete.return_value = True
+            res = client.delete("/api/trombi/exports/3")
+
+        assert res.status_code == 204
+        assert not export_path.exists()
+        mock_delete.assert_called_once_with(3)
+
+    def test_returns_404_when_deleting_missing_export(self):
+        with patch("src.routers.trombi.ExportModel.find_by_id") as mock_export:
+            mock_export.return_value = None
+            res = client.delete("/api/trombi/exports/999")
+
+        assert res.status_code == 404

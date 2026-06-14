@@ -5,7 +5,7 @@ import Icon from "../components/Icon";
 import Modal from "../components/Modal";
 import { CLASS_COLORS } from "../services/api";
 
-export default function ClassesPage({ classes, students, onSaveClass, onDeleteClass, toast }) {
+export default function ClassesPage({ classes, students, canManage = false, onSaveClass, onDeleteClass, toast }) {
   const [showModal, setShowModal] = useState(false);
   const [editClass, setEditClass] = useState(null);
   const [detailsClass, setDetailsClass] = useState(null);
@@ -31,7 +31,7 @@ export default function ClassesPage({ classes, students, onSaveClass, onDeleteCl
           <h1 className="page-title">Classes</h1>
           <p className="page-subtitle">{classes.length} classes enregistrées</p>
         </div>
-        <button className="btn btn-primary" onClick={openNew}><Icon name="plus" /> Nouvelle classe</button>
+        {canManage && <button className="btn btn-primary" onClick={openNew}><Icon name="plus" /> Nouvelle classe</button>}
       </div>
 
       <div className="card">
@@ -45,7 +45,7 @@ export default function ClassesPage({ classes, students, onSaveClass, onDeleteCl
         <table>
           <thead>
             <tr>
-              <th></th><th>Libellé</th><th>Année</th><th>Étudiants</th><th>Actions</th>
+              <th></th><th>Libellé</th><th>Année</th><th>Étudiants</th>{canManage && <th>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -64,12 +64,14 @@ export default function ClassesPage({ classes, students, onSaveClass, onDeleteCl
                       <span style={{ fontSize: 12, color: "var(--muted)" }}>élèves</span>
                     </div>
                   </td>
-                  <td>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button className="btn btn-secondary btn-sm" onClick={(event) => { event.stopPropagation(); openEdit(c); }}><Icon name="edit" size={12} /> Modifier</button>
-                      <button className="btn btn-danger btn-sm" onClick={(event) => { event.stopPropagation(); del(c.id); }}><Icon name="trash" size={12} /></button>
-                    </div>
-                  </td>
+                  {canManage && (
+                    <td>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button className="btn btn-secondary btn-sm" onClick={(event) => { event.stopPropagation(); openEdit(c); }}><Icon name="edit" size={12} /> Modifier</button>
+                        <button className="btn btn-danger btn-sm" onClick={(event) => { event.stopPropagation(); del(c.id); }}><Icon name="trash" size={12} /></button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -83,6 +85,7 @@ export default function ClassesPage({ classes, students, onSaveClass, onDeleteCl
           students={students}
           onClose={() => setDetailsClass(null)}
           onEdit={openEdit}
+          canManage={canManage}
         />
       )}
 
@@ -90,6 +93,7 @@ export default function ClassesPage({ classes, students, onSaveClass, onDeleteCl
         <Modal
           title={editClass ? "Modifier la classe" : "Nouvelle classe"}
           onClose={() => setShowModal(false)}
+          className="class-edit-modal"
           footer={
             <>
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>

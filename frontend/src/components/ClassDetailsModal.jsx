@@ -1,7 +1,7 @@
 import Icon from "./Icon";
 import Modal from "./Modal";
 
-export default function ClassDetailsModal({ classItem, students, onClose, onEdit }) {
+export default function ClassDetailsModal({ classItem, students, onClose, onEdit, canManage = false }) {
   const classStudents = students.filter((student) => student.classId === classItem.id);
 
   return (
@@ -14,9 +14,11 @@ export default function ClassDetailsModal({ classItem, students, onClose, onEdit
           <button className="btn btn-secondary" type="button" onClick={onClose}>
             Fermer
           </button>
-          <button className="btn btn-primary" type="button" onClick={() => onEdit?.(classItem)}>
-            <Icon name="edit" /> Modifier
-          </button>
+          {canManage && (
+            <button className="btn btn-primary" type="button" onClick={() => onEdit?.(classItem)}>
+              <Icon name="edit" /> Modifier
+            </button>
+          )}
         </>
       }
     >
