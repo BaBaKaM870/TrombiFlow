@@ -2,7 +2,7 @@ import threading
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query, Depends
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, Response
 from typing import Optional
 
 from ..models.student import StudentModel
@@ -10,7 +10,7 @@ from ..models.class_ import ClassModel
 from ..models.export import ExportModel
 from ..middlewares.auth import get_current_user
 from ..config.storage import UPLOAD_DIR
-from ..services.html_service import generate_trombi_html
+from ..services.html_service import generate_trombi_html, save_trombi_html
 from ..services.pdf_service import generate_pdf
 
 router = APIRouter(prefix="/api/trombi", tags=["trombi"])
@@ -26,6 +26,13 @@ def _log_export(**kwargs):
             print(f"[warn] Export log failed: {e}")
 
     threading.Thread(target=_run, daemon=True).start()
+
+
+def _safe_export_filename(class_label: str | None, extension: str) -> str:
+    safe_label = "".join(
+        ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in (class_label or "all")
+    )
+    return f"trombi-{safe_label}.{extension}"
 
 
 @router.get("", include_in_schema=False)
@@ -52,8 +59,9 @@ def generate(
 
     if format == "html":
         html = generate_trombi_html(students, opts)
+        html_path = save_trombi_html(students, opts)
         _log_export(
-            class_id=class_id, format="html", file_path=None, generated_by=user_id
+            class_id=class_id, format="html", file_path=html_path, generated_by=user_id
         )
         return HTMLResponse(content=html, media_type="text/html; charset=utf-8")
 
@@ -80,7 +88,32 @@ def download_export(id: int, current_user: dict = Depends(get_current_user)):
     if not export:
         raise HTTPException(status_code=404, detail="Export not found")
 
-    if export.get("format") != "pdf" or not export.get("file_path"):
+    export_format = (export.get("format") or "").lower()
+    if export_format not in ("pdf", "html"):
+        raise HTTPException(
+            status_code=404, detail="No downloadable file for this export"
+        )
+
+    class_label = export.get("class_label") or "all"
+
+    if export_format == "html" and not export.get("file_path"):
+        students = StudentModel.find_all(class_id=export.get("class_id"))
+        if not students:
+            raise HTTPException(status_code=404, detail="No students found for this export")
+
+        html = generate_trombi_html(
+            students,
+            {"title": "Trombinoscope", "class_label": export.get("class_label") or ""},
+        )
+        return Response(
+            content=html,
+            media_type="text/html; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="{_safe_export_filename(class_label, "html")}"'
+            },
+        )
+
+    if not export.get("file_path"):
         raise HTTPException(
             status_code=404, detail="No downloadable file for this export"
         )
@@ -95,13 +128,11 @@ def download_export(id: int, current_user: dict = Depends(get_current_user)):
     if not file_path.exists() or not file_path.is_file():
         raise HTTPException(status_code=404, detail="Export file is missing")
 
-    class_label = export.get("class_label") or "all"
-    safe_label = "".join(
-        ch if ch.isalnum() or ch in ("-", "_") else "-" for ch in class_label
-    )
-    filename = f"trombi-{safe_label}.pdf"
+    extension = "html" if export_format == "html" else "pdf"
+    media_type = "text/html; charset=utf-8" if export_format == "html" else "application/pdf"
+    filename = _safe_export_filename(class_label, extension)
     return FileResponse(
         str(file_path),
-        media_type="application/pdf",
+        media_type=media_type,
         filename=filename,
     )

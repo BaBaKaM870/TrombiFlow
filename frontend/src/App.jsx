@@ -5,6 +5,7 @@ import ClassesPage from "./pages/ClassesPage";
 import StudentsPage from "./pages/StudentsPage";
 import GeneratePage from "./pages/GeneratePage";
 import Icon from "./components/Icon";
+import ProfileModal from "./components/ProfileModal";
 import { ToastContainer, useToasts } from "./components/Toast";
 import {
   createClass,
@@ -16,13 +17,16 @@ import {
   getClasses,
   getExports,
   getMe,
+  getStats,
   getStudents,
   importStudentsCSV,
   login,
   register,
   registerWithPhoto,
   updateClass,
+  updateCurrentUser,
   updateStudent,
+  uploadCurrentUserPhoto,
   uploadStudentPhoto,
 } from "./services/clientAPI";
 import esieeLogo from "./images/logo-esiee-it.png";
@@ -35,19 +39,23 @@ export default function App() {
   const [students, setStudents] = useState([]);
   const [exportsLog, setExportsLog] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(true);
+  const [storageBytes, setStorageBytes] = useState(null);
   const { toasts, add: addToast } = useToasts();
 
   const reloadData = async () => {
-    const [classesData, studentsData, exportsData] = await Promise.all([
+    const [classesData, studentsData, exportsData, statsData] = await Promise.all([
       getClasses(),
       getStudents(),
       getExports(),
+      getStats().catch(() => null),
     ]);
 
     setClasses(classesData);
     setStudents(studentsData);
     setExportsLog(exportsData);
+    if (statsData) setStorageBytes(statsData.storage_bytes);
   };
 
   useEffect(() => {
@@ -192,6 +200,31 @@ export default function App() {
     await reloadData();
   };
 
+  const handleProfileSave = async ({ username, email, password, photo }) => {
+    const payload = { username, email };
+    if (password?.trim()) payload.password = password.trim();
+
+    let updatedUser = await updateCurrentUser(payload);
+    if (photo) {
+      updatedUser = await uploadCurrentUserPhoto(photo);
+    }
+
+    setCurrentUser(updatedUser);
+    addToast("Profil mis à jour ✓");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setCurrentUser(null);
+    setShowProfile(false);
+    setClasses([]);
+    setStudents([]);
+    setExportsLog([]);
+    setStorageBytes(null);
+    setPage("landing");
+    addToast("Session fermée");
+  };
+
   const handleGenerateTrombi = async (classId, format) => {
     const response = await generateTrombi(classId, format);
     await reloadData();
@@ -199,7 +232,7 @@ export default function App() {
   };
 
   const handleDownloadExport = async (entry) => {
-    if (!entry?.id || !entry.filePath) {
+    if (!entry?.id || (entry.format !== "HTML" && !entry.filePath)) {
       addToast("Aucun fichier disponible pour cet export", "error");
       return;
     }
@@ -207,9 +240,10 @@ export default function App() {
     const response = await downloadExport(entry.id);
     const blob = await response.blob();
     const downloadUrl = URL.createObjectURL(blob);
+    const extension = entry.format === "HTML" ? "html" : "pdf";
     const link = document.createElement("a");
     link.href = downloadUrl;
-    link.download = `trombi-${entry.class || "all"}.pdf`;
+    link.download = `trombi-${entry.class || "all"}.${extension}`;
     link.click();
     URL.revokeObjectURL(downloadUrl);
   };
@@ -286,13 +320,17 @@ export default function App() {
               </div>
             ))}
           </nav>
-          <div className="sidebar-user">
-            <div className="user-avatar-sm">{currentUser?.username?.[0]?.toUpperCase() || "A"}</div>
+          <button className="sidebar-user" type="button" onClick={() => setShowProfile(true)}>
+            {currentUser?.photoUrl ? (
+              <img className="user-avatar-sm user-avatar-img" src={currentUser.photoUrl} alt="" />
+            ) : (
+              <div className="user-avatar-sm">{currentUser?.username?.[0]?.toUpperCase() || "A"}</div>
+            )}
             <div>
               <div className="user-info-name">{currentUser?.username || "Admin"}</div>
               <div className="user-info-role">{currentUser?.role || "Administrateur"}</div>
             </div>
-          </div>
+          </button>
         </aside>
 
         <main className={`main main-${page}`}>
@@ -312,7 +350,7 @@ export default function App() {
             <span className="badge badge-blue session-badge">Session active</span>
           </div>
 
-          {page === "dashboard" && <DashboardPage classes={classesView} students={students} exports={exportsLog} onDownloadExport={handleDownloadExport} />}
+          {page === "dashboard" && <DashboardPage classes={classesView} students={students} exports={exportsLog} storageBytes={storageBytes} onDownloadExport={handleDownloadExport} />}
           {page === "classes" && <ClassesPage classes={classesView} students={students} onSaveClass={handleClassSave} onDeleteClass={handleClassDelete} toast={addToast} />}
           {page === "students" && <StudentsPage students={students} classes={classesView} onSaveStudent={handleStudentSave} onDeleteStudent={handleStudentDelete} onImportCsv={handleCsvImport} onUploadPhoto={handleStudentPhotoUpload} toast={addToast} />}
           {page === "generate" && <GeneratePage classes={classesView} students={students} onGenerateTrombi={handleGenerateTrombi} toast={addToast} />}
@@ -320,6 +358,14 @@ export default function App() {
       </div>
 
       <ToastContainer toasts={toasts} />
+      {showProfile && currentUser && (
+        <ProfileModal
+          user={currentUser}
+          onClose={() => setShowProfile(false)}
+          onSave={handleProfileSave}
+          onLogout={handleLogout}
+        />
+      )}
     </>
   );
 }
