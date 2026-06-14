@@ -34,7 +34,9 @@ def generate_pdf(students: list[dict], options: dict | None = None) -> str:
     opts = options or {}
     title = opts.get("title", "Trombinoscope")
     class_label = opts.get("class_label", "")
-    output_path = Path(UPLOAD_DIR) / f"trombi-{int(datetime.now().timestamp() * 1000)}.pdf"
+    output_path = (
+        Path(UPLOAD_DIR) / f"trombi-{int(datetime.now().timestamp() * 1000)}.pdf"
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     c = canvas.Canvas(str(output_path), pagesize=A4)
@@ -47,7 +49,9 @@ def generate_pdf(students: list[dict], options: dict | None = None) -> str:
             _draw_footer(c, page_number, generated_at)
             c.showPage()
             page_number += 1
-            y = _draw_header(c, title, class_label, len(students), generated_at, compact=True)
+            y = _draw_header(
+                c, title, class_label, len(students), generated_at, compact=True
+            )
 
         y -= CARD_H
         _draw_student_card(c, student, index, y, class_label)
@@ -105,13 +109,19 @@ def _draw_header(
     if not compact:
         c.setFillColor(MUTED)
         c.setFont("Helvetica", 9)
-        c.drawString(MARGIN_X, PAGE_H - header_h - 22, f"Genere le {generated_at.strftime('%d/%m/%Y a %H:%M')}")
+        c.drawString(
+            MARGIN_X,
+            PAGE_H - header_h - 22,
+            f"Genere le {generated_at.strftime('%d/%m/%Y a %H:%M')}",
+        )
         return PAGE_H - header_h - 40
 
     return PAGE_H - header_h - 28
 
 
-def _draw_student_card(c: canvas.Canvas, student: dict, index: int, y: float, class_label: str):
+def _draw_student_card(
+    c: canvas.Canvas, student: dict, index: int, y: float, class_label: str
+):
     x = MARGIN_X
     w = PAGE_W - 2 * MARGIN_X
 
@@ -160,7 +170,10 @@ def _draw_student_card(c: canvas.Canvas, student: dict, index: int, y: float, cl
     text_x = x + 116
     right_x = x + w - 22
     content_w = right_x - text_x
-    name = f"{student.get('first_name', '')} {student.get('last_name', '')}".strip() or "Etudiant"
+    name = (
+        f"{student.get('first_name', '')} {student.get('last_name', '')}".strip()
+        or "Etudiant"
+    )
     email = student.get("email") or "Email non renseigne"
     cls = student.get("class_label") or class_label or "Classe non renseignee"
     student_id = student.get("id") or "-"
@@ -172,11 +185,15 @@ def _draw_student_card(c: canvas.Canvas, student: dict, index: int, y: float, cl
 
     c.setFillColor(TEXT)
     c.setFont("Helvetica-Bold", 14)
-    _draw_trimmed(c, name, text_x + 28, y + CARD_H - 38, content_w - 28, "Helvetica-Bold", 14)
+    _draw_trimmed(
+        c, name, text_x + 28, y + CARD_H - 38, content_w - 28, "Helvetica-Bold", 14
+    )
 
     c.setFillColor(MUTED)
     c.setFont("Helvetica", 9)
-    _draw_trimmed(c, email, text_x + 28, y + CARD_H - 56, content_w - 28, "Helvetica", 9)
+    _draw_trimmed(
+        c, email, text_x + 28, y + CARD_H - 56, content_w - 28, "Helvetica", 9
+    )
 
     c.setStrokeColor(BORDER)
     c.setLineWidth(0.7)
@@ -185,11 +202,27 @@ def _draw_student_card(c: canvas.Canvas, student: dict, index: int, y: float, cl
     detail_gap = 9
     detail_w = (content_w - detail_gap * 2) / 3
     _draw_label_value(c, "Classe", cls, text_x, y + 16, detail_w)
-    _draw_label_value(c, "Identifiant", f"#{student_id}", text_x + detail_w + detail_gap, y + 16, detail_w)
-    _draw_label_value(c, "Inscrit le", created_at, text_x + (detail_w + detail_gap) * 2, y + 16, detail_w)
+    _draw_label_value(
+        c,
+        "Identifiant",
+        f"#{student_id}",
+        text_x + detail_w + detail_gap,
+        y + 16,
+        detail_w,
+    )
+    _draw_label_value(
+        c,
+        "Inscrit le",
+        created_at,
+        text_x + (detail_w + detail_gap) * 2,
+        y + 16,
+        detail_w,
+    )
 
 
-def _draw_label_value(c: canvas.Canvas, label: str, value: str, x: float, y: float, width: float):
+def _draw_label_value(
+    c: canvas.Canvas, label: str, value: str, x: float, y: float, width: float
+):
     c.setFillColor(CREAM)
     c.roundRect(x, y, width, 28, 8, fill=1, stroke=0)
     c.setFillColor(MUTED)
@@ -211,7 +244,8 @@ def _draw_footer(c: canvas.Canvas, page_number: int, generated_at: datetime):
     c.drawString(
         MARGIN_X,
         16,
-        f"Donnees personnelles - Conformite RGPD. Genere le {generated_at.strftime('%d/%m/%Y')} par TrombiFlow.",
+        f"Donnees personnelles - Conformite RGPD."
+        f" Genere le {generated_at.strftime('%d/%m/%Y')} par TrombiFlow.",
     )
     c.drawRightString(PAGE_W - MARGIN_X, 16, f"Page {page_number}")
 

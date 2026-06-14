@@ -37,6 +37,11 @@ app.include_router(students.router)
 app.include_router(trombi.router)
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.get("/api/me")
 def me(current_user: dict = Depends(get_current_user)):
     return current_user

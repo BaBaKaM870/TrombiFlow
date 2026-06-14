@@ -31,24 +31,17 @@ spec:
       containers:
         - name: backend
           image: ghcr.io/babakam870/trombiflow/backend:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8000
               protocol: TCP
-          env:
-            - name: PYTHONUNBUFFERED
-              value: "1"
-            - name: PYTHONDONTWRITEBYTECODE
-              value: "1"
           envFrom:
             - configMapRef:
                 name: trombiflow-config
             - secretRef:
                 name: trombiflow-secrets
           volumeMounts:
-            - name: uploads-data
-              mountPath: /data/uploads
             - name: tmp
               mountPath: /tmp
           securityContext:
@@ -68,7 +61,7 @@ spec:
               memory: 512Mi
           readinessProbe:
             httpGet:
-              path: /docs
+              path: /health
               port: 8000
               scheme: HTTP
             initialDelaySeconds: 10
@@ -78,7 +71,7 @@ spec:
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: /docs
+              path: /health
               port: 8000
               scheme: HTTP
             initialDelaySeconds: 30
@@ -91,9 +84,6 @@ spec:
               exec:
                 command: ["/bin/sh", "-c", "sleep 15"]
       volumes:
-        - name: uploads-data
-          persistentVolumeClaim:
-            claimName: uploads-pvc
         - name: tmp
           emptyDir: {}
       affinity:
@@ -128,19 +118,3 @@ spec:
       port: 8000
       targetPort: 8000
       protocol: TCP
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: uploads-pvc
-  namespace: trombiflow
-  labels:
-    app: backend
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: standard
-  resources:
-    requests:
-      storage: 5Gi

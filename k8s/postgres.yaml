@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: postgres
   namespace: trombiflow
@@ -7,9 +7,8 @@ metadata:
     app: postgres
     version: v1
 spec:
+  serviceName: postgres
   replicas: 1
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app: postgres
@@ -50,6 +49,10 @@ spec:
           volumeMounts:
             - name: pg-data
               mountPath: /var/lib/postgresql/data
+            - name: pg-tmp
+              mountPath: /tmp
+            - name: pg-run
+              mountPath: /var/run/postgresql
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -88,10 +91,23 @@ spec:
             successThreshold: 1
             failureThreshold: 3
       volumes:
-        - name: pg-data
-          persistentVolumeClaim:
-            claimName: postgres-pvc
+        - name: pg-tmp
+          emptyDir: {}
+        - name: pg-run
+          emptyDir: {}
       terminationGracePeriodSeconds: 30
+  volumeClaimTemplates:
+    - metadata:
+        name: pg-data
+        labels:
+          app: postgres
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 10Gi
 
 ---
 apiVersion: v1
@@ -111,19 +127,3 @@ spec:
       port: 5432
       targetPort: 5432
       protocol: TCP
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-pvc
-  namespace: trombiflow
-  labels:
-    app: postgres
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: standard
-  resources:
-    requests:
-      storage: 10Gi

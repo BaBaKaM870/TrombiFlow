@@ -6,7 +6,6 @@ import random
 import time
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from ..config.storage import UPLOAD_DIR
-from ..services.image_service import resize_photo
 from ..services.storage_service import save_photo
 from ..config.limiter import limiter
 
@@ -47,7 +46,10 @@ MAX_ARGON2_PASSWORD_BYTES = 10000000000
 
 def _validate_photo(photo: UploadFile):
     ext = os.path.splitext(photo.filename or "")[1].lower()
-    if photo.content_type not in ALLOWED_PHOTO_TYPES and ext not in ALLOWED_PHOTO_EXTENSIONS:
+    if (
+        photo.content_type not in ALLOWED_PHOTO_TYPES
+        and ext not in ALLOWED_PHOTO_EXTENSIONS
+    ):
         raise HTTPException(
             status_code=415,
             detail="Only JPEG, PNG and WebP images are allowed",
