@@ -65,7 +65,7 @@ TrombiFlow est une application web conteneurisée qui permet à l'administration
 | **Frontend** | React 18 · Vite · Node.js 20-alpine |
 | **Base de données** | Supabase (PostgreSQL) |
 | **Stockage fichiers** | Supabase Storage (S3-compatible) |
-| **Génération PDF** | WeasyPrint / wkhtmltopdf |
+| **Génération PDF** | ReportLab |
 | **Conteneurisation** | Docker multi-stage · Docker Compose |
 | **Orchestration** | Docker Compose · Kubernetes (manifests) |
 | **CI/CD** | GitHub Actions (test → build → deploy) |
@@ -250,24 +250,27 @@ Les tests couvrent : création classe/élève, import CSV (happy path + erreurs)
 
 ##  CI/CD
 
-Le pipeline GitHub Actions se déclenche à chaque push et comprend 3 jobs :
+Le pipeline GitHub Actions se déclenche à chaque push sur `main` ou `devops` et comprend 5 jobs :
 
 ```
-test ──► build ──► deploy
+check-versions ──► test-backend ──► test-frontend ──► build ──► deploy
 ```
 
-- **test** : installation des dépendances + exécution des tests
-- **build** : construction des images Docker + push sur GHCR
-- **deploy** : déploiement via SSH (`docker compose pull && up -d`)
+- **check-versions** : vérifie que toutes les dépendances sont épinglées (`==`)
+- **test-backend** : Black, Flake8, pytest
+- **test-frontend** : ESLint, Prettier (via conteneur Docker Node)
+- **build** : construction des images Docker backend + frontend, push sur GHCR (tag = SHA du commit)
+- **deploy** : désactivé par défaut (`DEPLOY_ENABLED: false`) — structure SSH prête pour un futur serveur
 
-Secrets à configurer dans GitHub → Settings → Secrets :
+Secrets à configurer dans GitHub → Settings → Secrets (uniquement si deploy activé) :
 
 ```
-REGISTRY_USER      # Identifiant Docker Hub / GHCR
-REGISTRY_TOKEN     # Token d'accès registry
 SSH_HOST           # IP du serveur de déploiement
+SSH_USER           # Utilisateur SSH
 SSH_KEY            # Clé SSH privée
 ```
+
+> `GITHUB_TOKEN` est injecté automatiquement par GitHub Actions pour le push GHCR — aucune configuration manuelle nécessaire.
 
 ---
 
