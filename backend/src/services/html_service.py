@@ -4,6 +4,12 @@ from pathlib import Path
 
 from ..config.storage import UPLOAD_DIR
 
+_PHOTO_ONERROR = (
+    "this.remove();"
+    " this.parentElement.classList.add('is-empty');"
+    " this.parentElement.querySelector('.photo-initials').hidden=false;"
+)
+
 
 def _esc(text: str) -> str:
     return (
@@ -59,7 +65,7 @@ def generate_trombi_html(students: list[dict], options: dict | None = None) -> s
         photo_markup = (
             f"""
           <img class="student-photo" src="{_esc(photo)}" alt="Photo de {_esc(full_name)}"
-               onerror="this.remove(); this.parentElement.classList.add('is-empty'); this.parentElement.querySelector('.photo-initials').hidden=false;"/>
+               onerror="{_PHOTO_ONERROR}"/>
           <span class="photo-initials" hidden>{_esc(initials)}</span>"""
             if photo
             else f'<span class="photo-initials">{_esc(initials)}</span>'

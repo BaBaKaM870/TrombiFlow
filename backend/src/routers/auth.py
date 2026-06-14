@@ -6,7 +6,6 @@ import random
 import time
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from ..config.storage import UPLOAD_DIR
-from ..services.image_service import resize_photo
 from ..services.storage_service import save_photo
 from ..config.limiter import limiter
 
