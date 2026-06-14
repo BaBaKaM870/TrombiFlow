@@ -2,6 +2,7 @@ import os
 import time
 import random
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -9,6 +10,7 @@ from typing import Optional
 from ..models.student import StudentModel
 from ..config.storage import UPLOAD_DIR
 from ..services.image_service import resize_photo
+from ..services.storage_service import save_photo
 from ..services.csv_service import parse_csv, process_csv_records
 from ..middlewares.auth import get_current_user
 
@@ -107,13 +109,12 @@ async def upload_photo(id: int, photo: UploadFile = File(...)):
         f.write(content)
 
     try:
-        final_path = resize_photo(tmp_path)
+        rel_url = save_photo(tmp_path)
     except Exception as exc:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
         raise HTTPException(status_code=400, detail="Invalid image file") from exc
 
-    rel_url = "uploads/" + os.path.basename(final_path)
     return StudentModel.update_photo(id, rel_url)
 
 
@@ -142,4 +143,4 @@ async def import_csv(file: UploadFile = File(...)):
     result = {"created": len(created), "students": created}
     if errors:
         result["errors"] = errors
-    return JSONResponse(status_code=201, content=result)
+    return JSONResponse(status_code=201, content=jsonable_encoder(result))

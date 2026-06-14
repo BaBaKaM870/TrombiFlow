@@ -105,6 +105,7 @@ function normalizeClass(cls) {
     id: cls.id,
     label: cls.label,
     year: cls.year || "",
+    createdAt: cls.created_at ?? cls.createdAt ?? "",
   };
 }
 
@@ -136,11 +137,23 @@ function normalizeExport(entry) {
   };
 }
 
+function normalizeUser(user) {
+  return {
+    id: user.id,
+    username: user.username ?? "",
+    email: user.email ?? "",
+    role: user.role ?? "teacher",
+    photoUrl: makeAssetUrl(user.photo_url ?? user.photoUrl ?? ""),
+    createdAt: user.created_at ?? user.createdAt ?? "",
+  };
+}
+
 export async function login(email, password) {
-  return request("/auth/login", {
+  const result = await request("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+  return { ...result, user: normalizeUser(result.user) };
 }
 
 export async function register(payload) {
@@ -158,7 +171,31 @@ export async function registerWithPhoto(formData) {
 }
 
 export async function getMe() {
-  return request("/me");
+  return normalizeUser(await request("/me"));
+}
+
+export async function updateCurrentUser(payload) {
+  return normalizeUser(
+    await request("/auth/me", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    })
+  );
+}
+
+export async function uploadCurrentUserPhoto(file) {
+  const formData = new FormData();
+  formData.append("photo", file);
+  return normalizeUser(
+    await request("/auth/me/photo", {
+      method: "POST",
+      body: formData,
+    })
+  );
+}
+
+export async function getStats() {
+  return request("/stats");
 }
 
 export async function getClasses() {

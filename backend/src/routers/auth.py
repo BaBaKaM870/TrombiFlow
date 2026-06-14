@@ -7,6 +7,7 @@ import time
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from ..config.storage import UPLOAD_DIR
 from ..services.image_service import resize_photo
+from ..services.storage_service import save_photo
 from ..config.limiter import limiter
 
 from pydantic import BaseModel
@@ -32,9 +33,47 @@ class RegisterBody(BaseModel):
     photo_url: str | None = None
 
 
+class ProfileUpdateBody(BaseModel):
+    username: str | None = None
+    email: str | None = None
+    password: str | None = None
+
+
 ALLOWED_PHOTO_TYPES = {"image/jpeg", "image/png", "image/webp"}
+ALLOWED_PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_PHOTO_SIZE = 5 * 1024 * 1024
 MAX_ARGON2_PASSWORD_BYTES = 10000000000
+
+
+def _validate_photo(photo: UploadFile):
+    ext = os.path.splitext(photo.filename or "")[1].lower()
+    if photo.content_type not in ALLOWED_PHOTO_TYPES and ext not in ALLOWED_PHOTO_EXTENSIONS:
+        raise HTTPException(
+            status_code=415,
+            detail="Only JPEG, PNG and WebP images are allowed",
+        )
+    return ext if ext in ALLOWED_PHOTO_EXTENSIONS else ".jpg"
+
+
+async def _save_uploaded_photo(photo: UploadFile) -> str:
+    ext = _validate_photo(photo)
+    content = await photo.read()
+    if len(content) > MAX_PHOTO_SIZE:
+        raise HTTPException(status_code=413, detail="File too large (max 5 MB)")
+
+    tmp_path = os.path.join(
+        UPLOAD_DIR,
+        f"{int(time.time() * 1000)}-{random.randint(0, 999999)}{ext}",
+    )
+    with open(tmp_path, "wb") as f:
+        f.write(content)
+
+    try:
+        return save_photo(tmp_path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise
 
 
 def _normalize_password(password: str) -> str:
@@ -90,31 +129,7 @@ async def register_with_photo(
     photo_url = None
 
     if photo:
-        if photo.content_type not in ALLOWED_PHOTO_TYPES:
-            raise HTTPException(
-                status_code=415,
-                detail="Only JPEG, PNG and WebP images are allowed",
-            )
-        content = await photo.read()
-        if len(content) > MAX_PHOTO_SIZE:
-            raise HTTPException(status_code=413, detail="File too large (max 5 MB)")
-
-        ext = os.path.splitext(photo.filename or "")[1].lower() or ".jpg"
-        tmp_path = os.path.join(
-            UPLOAD_DIR,
-            f"{int(time.time() * 1000)}-{random.randint(0, 999999)}{ext}",
-        )
-
-        with open(tmp_path, "wb") as f:
-            f.write(content)
-
-        try:
-            final_path = resize_photo(tmp_path)
-            photo_url = "uploads/" + os.path.basename(final_path)
-        except Exception:
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
-            raise
+        photo_url = await _save_uploaded_photo(photo)
 
     try:
         return UserModel.create(username, email, password_hash, role, photo_url)
@@ -125,3 +140,44 @@ async def register_with_photo(
 @router.get("/me")
 def me(current_user: dict = Depends(get_current_user)):
     return current_user
+
+
+@router.put("/me")
+def update_me(data: ProfileUpdateBody, current_user: dict = Depends(get_current_user)):
+    fields = {}
+
+    if data.username is not None:
+        username = data.username.strip()
+        if not username:
+            raise HTTPException(status_code=400, detail="Username is required")
+        fields["username"] = username
+
+    if data.email is not None:
+        email = data.email.strip()
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        fields["email"] = email
+
+    if data.password:
+        fields["password_hash"] = _pwd.hash(_normalize_password(data.password))
+
+    try:
+        updated = UserModel.update(current_user["id"], fields)
+    except Exception as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="User not found")
+    return updated
+
+
+@router.post("/me/photo")
+async def update_me_photo(
+    photo: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
+    photo_url = await _save_uploaded_photo(photo)
+    updated = UserModel.update_photo(current_user["id"], photo_url)
+    if not updated:
+        raise HTTPException(status_code=404, detail="User not found")
+    return updated
