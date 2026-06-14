@@ -47,7 +47,10 @@ MAX_ARGON2_PASSWORD_BYTES = 10000000000
 
 def _validate_photo(photo: UploadFile):
     ext = os.path.splitext(photo.filename or "")[1].lower()
-    if photo.content_type not in ALLOWED_PHOTO_TYPES and ext not in ALLOWED_PHOTO_EXTENSIONS:
+    if (
+        photo.content_type not in ALLOWED_PHOTO_TYPES
+        and ext not in ALLOWED_PHOTO_EXTENSIONS
+    ):
         raise HTTPException(
             status_code=415,
             detail="Only JPEG, PNG and WebP images are allowed",
