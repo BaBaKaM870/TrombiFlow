@@ -99,7 +99,7 @@ trombi-connecte/
 
 ---
 
-## ✅ Prérequis
+##  Prérequis
 
 - [Docker](https://www.docker.com/) >= 24 & Docker Compose >= 2
 - [Python](https://www.python.org/) >= 3.11 *(backend FastAPI en local)*
