@@ -2,7 +2,7 @@ import os
 import boto3
 from botocore.config import Config
 
-from ..config.storage import STORAGE_TYPE, UPLOAD_DIR
+from ..config.storage import STORAGE_TYPE
 from .image_service import resize_photo
 
 _S3_BUCKET = os.environ.get("S3_BUCKET", "trombiflow")
