@@ -63,8 +63,8 @@ TrombiFlow est une application web conteneurisée qui permet à l'administration
 |--------|-------------|
 | **Backend** | Python 3.11 · FastAPI · uvicorn |
 | **Frontend** | React 18 · Vite · Node.js 20-alpine |
-| **Base de données** | PostgreSQL 15-alpine |
-| **Stockage fichiers** | Local `/uploads` ou S3/MinIO |
+| **Base de données** | Supabase (PostgreSQL) |
+| **Stockage fichiers** | Supabase Storage (S3-compatible) |
 | **Génération PDF** | WeasyPrint / wkhtmltopdf |
 | **Conteneurisation** | Docker multi-stage · Docker Compose |
 | **Orchestration** | Docker Compose · Kubernetes (manifests) |
@@ -124,8 +124,7 @@ docker compose up -d
 
 L'application sera disponible sur :
 - **Frontend** → http://localhost:5173
-- **API Backend** -> http://localhost:8000
-- **MinIO Console** → http://localhost:9001 *(si activé)*
+- **API Backend** → http://localhost:8000
 
 ---
 
@@ -134,27 +133,26 @@ L'application sera disponible sur :
 Copiez `.env.example` en `.env` et renseignez les valeurs :
 
 ```env
-# Base de données
-DATABASE_URL=postgresql://user:password@localhost:5432/trombiflow
+# Base de données (Supabase)
+DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
 
-# Stockage (local ou s3)
-STORAGE_TYPE=local
-UPLOAD_DIR=uploads
-
-# S3/MinIO (si stockage S3)
-S3_BUCKET=trombiflow
-S3_ENDPOINT=http://minio:9000
-S3_KEY=minioadmin
-S3_SECRET=minioadmin
-
-# Génération PDF
-PDF_ENGINE=weasyprint   # ou wkhtmltopdf
-
-# Auth JWT (optionnel)
-JWT_SECRET=change_me_in_production
-
-# Serveur
+# Backend
+ENV=development
 PORT=8000
+BACKEND_PORT=8000
+JWT_SECRET=change_me_with_a_long_random_secret_min_32_characters
+
+# Frontend
+FRONTEND_PORT=5173
+VITE_API_BASE_URL=http://localhost:8000/api
+
+# Stockage Supabase Storage (S3-compatible)
+STORAGE_TYPE=s3
+S3_BUCKET=trombiflow
+S3_ENDPOINT=https://[ref].supabase.co/storage/v1/s3
+S3_REGION=eu-west-1
+S3_KEY=your_s3_access_key
+S3_SECRET=your_s3_secret_key
 ```
 
 ---
@@ -228,29 +226,23 @@ Jean,Dupont,jean.dupont@school.fr,3A,2025,
 ##  Tests
 
 ```bash
-# Depuis la racine du projet, tout lancer en une seule commande (Bash/Git Bash)
-(cd backend && npm test -- --watchAll=false) && (cd ../frontend && CI=true npm test -- --watchAll=false)
+# Tests backend (Python/pytest)
+cd backend
+pip install -r requirements.txt
+pytest
 
-#Sur le terminal de VSC :
-Set-Location backend; npm test -- --watchAll=false; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
-
-# Lancer tous les tests backend
-cd backend && npm test
-
-# Lancer les tests frontend
-cd frontend && npm test
-
-# Avec couverture de code
-npm run test:coverage
+# Tests frontend (Jest)
+cd frontend
+npm install
+CI=true npm test -- --watchAll=false
 ```
 
 ```powershell
-# Depuis la racine du projet, tout lancer en une seule commande (PowerShell Windows)
-Set-Location backend; npm test -- --watchAll=false; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
+# Depuis la racine du projet (PowerShell Windows)
+Set-Location backend; pytest; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
 ```
 
 > Sous Windows PowerShell, utilise le bloc `powershell` ci-dessus.
-> La ligne `CI=true ...` du bloc `bash` ne fonctionne pas en PowerShell.
 
 Les tests couvrent : création classe/élève, import CSV (happy path + erreurs), upload photo → vignette générée, génération trombi HTML (statut 200) et PDF (fichier non vide).
 
