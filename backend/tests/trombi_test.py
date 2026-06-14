@@ -93,7 +93,9 @@ class TestTrombiPDF:
 class TestTrombiDownload:
     def test_downloads_saved_html_export(self):
         export_path = Path(UPLOAD_DIR) / "test-export.html"
-        export_path.write_text("<!DOCTYPE html><html><body>OK</body></html>", encoding="utf-8")
+        export_path.write_text(
+            "<!DOCTYPE html><html><body>OK</body></html>", encoding="utf-8"
+        )
         try:
             with patch("src.routers.trombi.ExportModel.find_by_id") as mock_export:
                 mock_export.return_value = {

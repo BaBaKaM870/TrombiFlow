@@ -13,7 +13,9 @@ def parse_csv(content: bytes) -> list[dict]:
         csv_options["dialect"] = dialect
     except csv.Error:
         first_line = text.splitlines()[0] if text.splitlines() else ""
-        csv_options["delimiter"] = ";" if first_line.count(";") > first_line.count(",") else ","
+        csv_options["delimiter"] = (
+            ";" if first_line.count(";") > first_line.count(",") else ","
+        )
 
     reader = csv.DictReader(io.StringIO(text), **csv_options)
     if reader.fieldnames:

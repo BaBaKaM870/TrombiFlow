@@ -39,6 +39,11 @@ app.include_router(users.router)
 app.include_router(admin_requests.router)
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.get("/api/me")
 def me(current_user: dict = Depends(get_current_user)):
     return current_user

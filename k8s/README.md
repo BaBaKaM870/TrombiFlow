@@ -42,7 +42,6 @@ k8s/
 ├── configmap.yaml          # ConfigMap (variables non-sensibles)
 ├── secret.example.yaml     # Template Secret (⚠️ À dupliquer et adapter)
 ├── postgres.yaml           # Deployment + Service PostgreSQL
-├── minio.yaml              # Deployment + Service MinIO
 ├── backend.yaml            # Deployment + Service + PVC Backend
 ├── frontend.yaml           # Deployment + Service Frontend
 ├── ingress.yaml            # Ingress Controller (routing HTTP)
@@ -81,7 +80,6 @@ kubectl apply -f k8s/secret.yaml
 # Générer des secrets forts
 DB_PASSWORD=$(openssl rand -base64 32)
 JWT_SECRET=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
-MINIO_PASSWORD=$(openssl rand -base64 32)
 
 # Créer le secret Kubernetes directement
 kubectl create secret generic trombiflow-secrets \
@@ -91,12 +89,10 @@ kubectl create secret generic trombiflow-secrets \
   --from-literal=POSTGRES_DB=trombiflow \
   --from-literal=POSTGRES_USER=trombiflow \
   --from-literal=POSTGRES_PASSWORD="${DB_PASSWORD}" \
-  --from-literal=MINIO_ROOT_USER=minioadmin \
-  --from-literal=MINIO_ROOT_PASSWORD="${MINIO_PASSWORD}" \
   --from-literal=S3_BUCKET=trombiflow \
-  --from-literal=S3_ENDPOINT="http://minio:9000" \
-  --from-literal=S3_KEY=minioadmin \
-  --from-literal=S3_SECRET="${MINIO_PASSWORD}"
+  --from-literal=S3_ENDPOINT="https://your_project_ref.supabase.co/storage/v1/s3" \
+  --from-literal=S3_KEY="SUPABASE_ACCESS_KEY" \
+  --from-literal=S3_SECRET="SUPABASE_SECRET_KEY"
 ```
 
 ### Option 3 : Sealed Secrets (production recommandée)
@@ -139,23 +135,17 @@ kubectl apply -f k8s/configmap.yaml
 
 Choisir l'une des options ci-dessus (Manuel, Variables, ou Sealed Secrets).
 
-### Étape 4 : Déployer l'infrastructure (DB, MinIO)
+### Étape 4 : Déployer la base de données
 
 ```bash
 kubectl apply -f k8s/postgres.yaml
-kubectl apply -f k8s/minio.yaml
 ```
 
-Attendre que les pods soient prêts :
+Attendre que le pod soit prêt :
 
 ```bash
 kubectl wait --for=condition=ready pod \
   -l app=postgres \
-  -n trombiflow \
-  --timeout=300s
-
-kubectl wait --for=condition=ready pod \
-  -l app=minio \
   -n trombiflow \
   --timeout=300s
 ```
@@ -205,7 +195,6 @@ backend-78945bd5f4-8f9jx    1/1     Running   0          2m
 frontend-5d6c7e4f9-2k3m1    1/1     Running   0          2m
 frontend-5d6c7e4f9-9l2p8    1/1     Running   0          2m
 postgres-5d6f7d9c8-x4k2n    1/1     Running   0          3m
-minio-8f9j0k1l2-p5q6r       1/1     Running   0          3m
 ```
 
 ### 2. Vérifier les services
@@ -241,8 +230,6 @@ kubectl port-forward -n trombiflow svc/frontend 5173:80
 # Backend
 kubectl port-forward -n trombiflow svc/backend 8000:8000
 
-# MinIO Console
-kubectl port-forward -n trombiflow svc/minio-console 9001:9001
 ```
 
 ### 5. Vérifier les logs
@@ -357,20 +344,6 @@ kubectl get secret trombiflow-secrets -n trombiflow -o yaml
 kubectl exec -it deployment/backend -n trombiflow -- \
   python -c "import psycopg2; conn = psycopg2.connect('postgresql://...')"
 ```
-
-### MinIO inaccessible
-
-```bash
-# Vérifier le service MinIO
-kubectl get svc -n trombiflow | grep minio
-
-# Accéder à la console MinIO
-kubectl port-forward svc/minio-console 9001:9001 -n trombiflow
-# Puis : http://localhost:9001
-# Identifiants : minioadmin / <PASSWORD_FROM_SECRET>
-```
-
----
 
 ## 📊 Monitoring et Scaling
 

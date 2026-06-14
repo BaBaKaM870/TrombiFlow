@@ -4,6 +4,12 @@ from pathlib import Path
 
 from ..config.storage import UPLOAD_DIR
 
+_PHOTO_ONERROR = (
+    "this.remove();"
+    " this.parentElement.classList.add('is-empty');"
+    " this.parentElement.querySelector('.photo-initials').hidden=false;"
+)
+
 
 def _esc(text: str) -> str:
     return (
@@ -49,7 +55,9 @@ def generate_trombi_html(students: list[dict], options: dict | None = None) -> s
         full_name = f"{first_name} {last_name}".strip() or "Etudiant"
         initials = f"{first_name[:1]}{last_name[:1]}".strip().upper() or "ET"
         photo = _photo_src(student.get("photo_url"), base_url)
-        class_name = student.get("class_label") or class_label or "Classe non renseignee"
+        class_name = (
+            student.get("class_label") or class_label or "Classe non renseignee"
+        )
         email = student.get("email") or "Email non renseigne"
         student_id = student.get("id") or "-"
         created_at = _format_date(student.get("created_at"))
@@ -57,7 +65,7 @@ def generate_trombi_html(students: list[dict], options: dict | None = None) -> s
         photo_markup = (
             f"""
           <img class="student-photo" src="{_esc(photo)}" alt="Photo de {_esc(full_name)}"
-               onerror="this.remove(); this.parentElement.classList.add('is-empty'); this.parentElement.querySelector('.photo-initials').hidden=false;"/>
+               onerror="{_PHOTO_ONERROR}"/>
           <span class="photo-initials" hidden>{_esc(initials)}</span>"""
             if photo
             else f'<span class="photo-initials">{_esc(initials)}</span>'
@@ -392,7 +400,9 @@ def generate_trombi_html(students: list[dict], options: dict | None = None) -> s
 
 
 def save_trombi_html(students: list[dict], options: dict | None = None) -> str:
-    output_path = Path(UPLOAD_DIR) / f"trombi-{int(datetime.now().timestamp() * 1000)}.html"
+    output_path = (
+        Path(UPLOAD_DIR) / f"trombi-{int(datetime.now().timestamp() * 1000)}.html"
+    )
     html = generate_trombi_html(students, options)
     output_path.write_text(html, encoding="utf-8")
     return str(output_path)
