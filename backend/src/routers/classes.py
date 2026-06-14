@@ -4,7 +4,7 @@ from typing import Optional
 from psycopg2 import errors as pg_errors
 
 from ..models.class_ import ClassModel
-from ..middlewares.auth import get_current_user
+from ..middlewares.auth import get_current_user, require_admin
 
 router = APIRouter(
     prefix="/api/classes",
@@ -39,7 +39,7 @@ def get_by_id(id: int):
 
 @router.post("", status_code=201, include_in_schema=False)
 @router.post("/", status_code=201)
-def create(data: ClassCreate):
+def create(data: ClassCreate, _: dict = Depends(require_admin)):
     try:
         return ClassModel.create(data.label, data.year)
     except pg_errors.UniqueViolation:
@@ -47,7 +47,7 @@ def create(data: ClassCreate):
 
 
 @router.put("/{id}")
-def update(id: int, data: ClassUpdate):
+def update(id: int, data: ClassUpdate, _: dict = Depends(require_admin)):
     cls = ClassModel.update(id, data.model_dump(exclude_none=True))
     if not cls:
         raise HTTPException(status_code=404, detail="Class not found")
@@ -55,6 +55,6 @@ def update(id: int, data: ClassUpdate):
 
 
 @router.delete("/{id}", status_code=204)
-def remove(id: int):
+def remove(id: int, _: dict = Depends(require_admin)):
     if not ClassModel.delete(id):
         raise HTTPException(status_code=404, detail="Class not found")

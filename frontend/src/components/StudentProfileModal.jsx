@@ -6,7 +6,7 @@ const EMPTY_FORM = { firstName: "", lastName: "", email: "", classId: "", photo:
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
 
-export default function StudentProfileModal({ student, classes, onClose, onSave, onAskDelete }) {
+export default function StudentProfileModal({ student, classes, canManage = false, onClose, onSave, onAskDelete }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [preview, setPreview] = useState("");
   const [error, setError] = useState("");
@@ -76,15 +76,19 @@ export default function StudentProfileModal({ student, classes, onClose, onSave,
       className="student-profile-modal"
       footer={
         <>
-          <button className="btn btn-danger student-profile-delete" type="button" onClick={() => onAskDelete?.(student)}>
-            <Icon name="trash" /> Supprimer
-          </button>
+          {canManage && (
+            <button className="btn btn-danger student-profile-delete" type="button" onClick={() => onAskDelete?.(student)}>
+              <Icon name="trash" /> Supprimer
+            </button>
+          )}
           <button className="btn btn-secondary" type="button" onClick={onClose}>
-            Annuler
+            {canManage ? "Annuler" : "Fermer"}
           </button>
-          <button className="btn btn-primary" type="submit" form={formId} disabled={saving}>
-            <Icon name="check" /> {saving ? "Enregistrement..." : "Enregistrer"}
-          </button>
+          {canManage && (
+            <button className="btn btn-primary" type="submit" form={formId} disabled={saving}>
+              <Icon name="check" /> {saving ? "Enregistrement..." : "Enregistrer"}
+            </button>
+          )}
         </>
       }
     >
@@ -96,14 +100,16 @@ export default function StudentProfileModal({ student, classes, onClose, onSave,
             ) : (
               <div className="student-profile-photo student-profile-photo-fallback">{initials}</div>
             )}
-            <button
-              className="student-profile-photo-button"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              aria-label="Changer la photo de l'etudiant"
-            >
-              <Icon name="camera" size={15} />
-            </button>
+            {canManage && (
+              <button
+                className="student-profile-photo-button"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                aria-label="Changer la photo de l'etudiant"
+              >
+                <Icon name="camera" size={15} />
+              </button>
+            )}
           </div>
 
           <div className="student-profile-identity">
@@ -120,6 +126,7 @@ export default function StudentProfileModal({ student, classes, onClose, onSave,
             type="file"
             accept="image/jpeg,image/png,image/webp"
             className="student-profile-file"
+            disabled={!canManage}
             onChange={(event) => setForm({ ...form, photo: event.target.files?.[0] || null })}
           />
         </div>
@@ -129,22 +136,22 @@ export default function StudentProfileModal({ student, classes, onClose, onSave,
         <div className="student-profile-fields">
           <div className="form-group">
             <label className="form-label">Prenom</label>
-            <input className="form-input" value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} />
+            <input className="form-input" value={form.firstName} disabled={!canManage} onChange={(event) => setForm({ ...form, firstName: event.target.value })} />
           </div>
 
           <div className="form-group">
             <label className="form-label">Nom</label>
-            <input className="form-input" value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} />
+            <input className="form-input" value={form.lastName} disabled={!canManage} onChange={(event) => setForm({ ...form, lastName: event.target.value })} />
           </div>
 
           <div className="form-group">
             <label className="form-label">Email</label>
-            <input className="form-input" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
+            <input className="form-input" type="email" value={form.email} disabled={!canManage} onChange={(event) => setForm({ ...form, email: event.target.value })} />
           </div>
 
           <div className="form-group">
             <label className="form-label">Classe</label>
-            <select className="form-input filter-select" value={form.classId} onChange={(event) => setForm({ ...form, classId: event.target.value })}>
+            <select className="form-input filter-select" value={form.classId} disabled={!canManage} onChange={(event) => setForm({ ...form, classId: event.target.value })}>
               <option value="">Selectionner une classe</option>
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>{cls.label} ({cls.year || "annee"})</option>

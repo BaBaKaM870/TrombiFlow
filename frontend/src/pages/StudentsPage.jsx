@@ -6,7 +6,7 @@ import StudentForm from "../components/StudentForm";
 import StudentGrid from "../components/StudentGrid";
 import StudentProfileModal from "../components/StudentProfileModal";
 
-export default function StudentsPage({ students, classes, onSaveStudent, onDeleteStudent, onImportCsv, onUploadPhoto, toast }) {
+export default function StudentsPage({ students, classes, canManage = false, onSaveStudent, onDeleteStudent, onImportCsv, onUploadPhoto, toast }) {
   const [view, setView] = useState("grid");
   const [search, setSearch] = useState("");
   const [filterClass, setFilterClass] = useState("all");
@@ -84,10 +84,12 @@ export default function StudentsPage({ students, classes, onSaveStudent, onDelet
           <h1 className="page-title">Étudiants</h1>
           <p className="page-subtitle">{filtered.length} étudiant{filtered.length > 1 ? "s" : ""} affiché{filtered.length > 1 ? "s" : ""}</p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn btn-secondary" onClick={() => { setShowCSV(true); setCsvResult(null); }}><Icon name="upload" /> Importer CSV</button>
-          <button className="btn btn-primary" onClick={openNew}><Icon name="plus" /> Ajouter</button>
-        </div>
+        {canManage && (
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="btn btn-secondary" onClick={() => { setShowCSV(true); setCsvResult(null); }}><Icon name="upload" /> Importer CSV</button>
+            <button className="btn btn-primary" onClick={openNew}><Icon name="plus" /> Ajouter</button>
+          </div>
+        )}
       </div>
 
       <div className="card">
@@ -116,6 +118,7 @@ export default function StudentsPage({ students, classes, onSaveStudent, onDelet
           onUploadPhoto={onUploadPhoto}
           onEdit={openEdit}
           onOpen={setProfileStudent}
+          canManage={canManage}
         />
       </div>
 
@@ -123,6 +126,7 @@ export default function StudentsPage({ students, classes, onSaveStudent, onDelet
         <Modal
           title="Ajouter un étudiant"
           onClose={() => { setShowModal(false); setEditStudent(null); }}
+          className="student-edit-modal"
           footer={
             <>
               <button className="btn btn-secondary" onClick={() => { setShowModal(false); setEditStudent(null); }}>Annuler</button>
@@ -141,6 +145,7 @@ export default function StudentsPage({ students, classes, onSaveStudent, onDelet
           onClose={() => setProfileStudent(null)}
           onSave={(form) => saveStudent(form, profileStudent.id)}
           onAskDelete={askDeleteStudent}
+          canManage={canManage}
         />
       )}
 
@@ -172,6 +177,7 @@ export default function StudentsPage({ students, classes, onSaveStudent, onDelet
         <Modal
           title="Importer des étudiants (CSV)"
           onClose={() => { setShowCSV(false); setCsvResult(null); setCsvFile(null); }}
+          className="csv-import-modal"
           footer={
             <>
               <button className="btn btn-secondary" onClick={() => { setShowCSV(false); setCsvResult(null); setCsvFile(null); }}>Fermer</button>

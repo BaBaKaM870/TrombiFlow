@@ -31,16 +31,32 @@ const StudentForm = forwardRef(function StudentForm({ classes, initialValue, onS
     onSubmit(form);
   };
 
+  const selectedClass = classes.find((cls) => cls.id === Number(form.classId));
+  const initials = `${form.firstName || ""} ${form.lastName || ""}`.trim()[0]?.toUpperCase() || "E";
+
   return (
-    <form ref={ref} onSubmit={handleSubmit}>
-      <div className="form-row">
+    <form ref={ref} className="student-form" onSubmit={handleSubmit}>
+      <div className="student-form-hero">
+        <div className="student-form-avatar">{initials}</div>
+        <div>
+          <div className="student-form-kicker">Etudiant</div>
+          <div className="student-form-title">{`${form.firstName || "Prenom"} ${form.lastName || "Nom"}`}</div>
+          <div className="student-form-subtitle">{form.email || "email@etudiant.fr"}</div>
+          <div className="student-form-meta">
+            <span className="badge badge-blue">{selectedClass?.label || "Sans classe"}</span>
+            {selectedClass?.year && <span className="badge badge-navy">{selectedClass.year}</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="student-form-grid">
         <div className="form-group">
           <label className="form-label">Prenom *</label>
           <input
             className="form-input"
             placeholder="Marie"
             value={form.firstName}
-            onChange={e => setForm({ ...form, firstName: e.target.value })}
+            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
           />
         </div>
         <div className="form-group">
@@ -49,57 +65,49 @@ const StudentForm = forwardRef(function StudentForm({ classes, initialValue, onS
             className="form-input"
             placeholder="Dupont"
             value={form.lastName}
-            onChange={e => setForm({ ...form, lastName: e.target.value })}
+            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
           />
         </div>
-      </div>
-      <div className="form-group">
-        <label className="form-label">Email *</label>
-        <input
-          className="form-input"
-          type="email"
-          placeholder="marie.dupont@etudiant.fr"
-          value={form.email}
-          onChange={e => setForm({ ...form, email: e.target.value })}
-        />
-      </div>
-      <div className="form-group">
-        <label className="form-label">Classe</label>
-        <select
-          className="form-input filter-select"
-          style={{ width: "100%" }}
-          value={form.classId}
-          onChange={e => setForm({ ...form, classId: e.target.value })}
-        >
-          <option value="">Selectionner une classe</option>
-          {classes.map(c => <option key={c.id} value={c.id}>{c.label} ({c.year})</option>)}
-        </select>
-      </div>
-      <div className="form-group">
-        <label className="form-label">Photo (optionnel)</label>
-        <div className="upload-zone">
-          <div className="upload-icon">Photo</div>
-          <p className="upload-text">Choisissez une photo a associer a l'etudiant</p>
-          <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>JPEG / PNG / WebP - max 5 MB</p>
+        <div className="form-group">
+          <label className="form-label">Email *</label>
           <input
             className="form-input"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={e => setForm({ ...form, photo: e.target.files?.[0] || null })}
-            style={{ marginTop: 12 }}
+            type="email"
+            placeholder="marie.dupont@etudiant.fr"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
-          {form.photo && (
-            <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
-              Fichier selectionne : {form.photo.name}
-            </p>
-          )}
-          {error && (
-            <p style={{ fontSize: 12, color: "#e74c3c", marginTop: 8 }}>
-              {error}
-            </p>
-          )}
+        </div>
+        <div className="form-group">
+          <label className="form-label">Classe</label>
+          <select
+            className="form-input filter-select"
+            value={form.classId}
+            onChange={(e) => setForm({ ...form, classId: e.target.value })}
+          >
+            <option value="">Selectionner une classe</option>
+            {classes.map((c) => <option key={c.id} value={c.id}>{c.label} ({c.year})</option>)}
+          </select>
+        </div>
+
+        <div className="form-group student-form-photo-field">
+          <label className="form-label">Photo (optionnel)</label>
+          <div className="upload-zone student-form-upload">
+            <div className="upload-icon">Photo</div>
+            <p className="upload-text">Choisissez une photo a associer a l'etudiant</p>
+            <p className="student-form-hint">JPEG / PNG / WebP - max 5 MB</p>
+            <input
+              className="form-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => setForm({ ...form, photo: e.target.files?.[0] || null })}
+            />
+            {form.photo && <p className="student-form-file">Fichier selectionne : {form.photo.name}</p>}
+            {error && <p className="student-form-error">{error}</p>}
+          </div>
         </div>
       </div>
+
       <button type="submit" style={{ display: "none" }} aria-hidden="true">submit</button>
     </form>
   );

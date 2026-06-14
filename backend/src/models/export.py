@@ -20,7 +20,12 @@ class ExportModel:
     @staticmethod
     def find_all() -> list[dict]:
         return query("""
-            SELECT e.*, c.label AS class_label, u.username AS generated_by_name
+            SELECT
+              e.*,
+              c.label AS class_label,
+              u.username AS generated_by_name,
+              u.email AS generated_by_email,
+              u.role AS generated_by_role
             FROM exports e
             LEFT JOIN classes c ON e.class_id = c.id
             LEFT JOIN users   u ON e.generated_by = u.id
@@ -28,10 +33,34 @@ class ExportModel:
             """)
 
     @staticmethod
+    def find_by_user(user_id: int) -> list[dict]:
+        return query(
+            """
+            SELECT
+              e.*,
+              c.label AS class_label,
+              u.username AS generated_by_name,
+              u.email AS generated_by_email,
+              u.role AS generated_by_role
+            FROM exports e
+            LEFT JOIN classes c ON e.class_id = c.id
+            LEFT JOIN users   u ON e.generated_by = u.id
+            WHERE e.generated_by = %s
+            ORDER BY e.created_at DESC
+            """,
+            (user_id,),
+        )
+
+    @staticmethod
     def find_by_id(id: int) -> dict | None:
         return query_one(
             """
-            SELECT e.*, c.label AS class_label, u.username AS generated_by_name
+            SELECT
+              e.*,
+              c.label AS class_label,
+              u.username AS generated_by_name,
+              u.email AS generated_by_email,
+              u.role AS generated_by_role
             FROM exports e
             LEFT JOIN classes c ON e.class_id = c.id
             LEFT JOIN users   u ON e.generated_by = u.id
@@ -39,3 +68,8 @@ class ExportModel:
             """,
             (id,),
         )
+
+    @staticmethod
+    def delete(id: int) -> bool:
+        deleted = query_one("DELETE FROM exports WHERE id = %s RETURNING id", (id,))
+        return deleted is not None

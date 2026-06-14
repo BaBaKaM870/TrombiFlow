@@ -36,8 +36,8 @@ class TestPhotoUpload:
         with patch("src.routers.students.StudentModel.find_by_id") as mock_find, patch(
             "src.routers.students.StudentModel.update_photo"
         ) as mock_update, patch(
-            "src.routers.students.resize_photo"
-        ) as mock_resize, patch(
+            "src.routers.students.save_photo"
+        ) as mock_save, patch(
             "src.routers.students.UPLOAD_DIR", str(tmp_path)
         ):
             mock_find.return_value = {
@@ -51,14 +51,14 @@ class TestPhotoUpload:
                 "last_name": "Dupont",
                 "photo_url": "uploads/photo.jpg",
             }
-            mock_resize.return_value = str(fake_photo)
+            mock_save.return_value = "uploads/photo.jpg"
             res = client.post(
                 "/api/students/1/photo",
                 files={"photo": ("test.jpg", TINY_JPEG, "image/jpeg")},
             )
         assert res.status_code == 200
         assert res.json()["photo_url"] is not None
-        mock_resize.assert_called_once()
+        mock_save.assert_called_once()
 
     def test_rejects_non_image_files(self):
         res = client.post(

@@ -132,6 +132,9 @@ function normalizeExport(entry) {
     class: entry.class_label ?? entry.classLabel ?? "—",
     format: (entry.format ?? "").toUpperCase(),
     by: entry.generated_by_name ?? entry.generated_by ?? "—",
+    byEmail: entry.generated_by_email ?? entry.generatedByEmail ?? "",
+    generatedById: entry.generated_by ?? entry.generatedById ?? null,
+    generatedByRole: entry.generated_by_role ?? entry.generatedByRole ?? "",
     date: entry.created_at ?? entry.createdAt ?? "",
     filePath: entry.file_path ?? entry.filePath ?? null,
   };
@@ -144,6 +147,7 @@ function normalizeUser(user) {
     email: user.email ?? "",
     role: user.role ?? "teacher",
     photoUrl: makeAssetUrl(user.photo_url ?? user.photoUrl ?? ""),
+    adminUntil: user.admin_until ?? user.adminUntil ?? null,
     createdAt: user.created_at ?? user.createdAt ?? "",
   };
 }
@@ -196,6 +200,62 @@ export async function uploadCurrentUserPhoto(file) {
 
 export async function getStats() {
   return request("/stats");
+}
+
+export async function getUsers() {
+  const users = await request("/users");
+  return users.map(normalizeUser);
+}
+
+export async function createUser(payload) {
+  return normalizeUser(
+    await request("/users", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    })
+  );
+}
+
+export async function updateUser(id, payload) {
+  return normalizeUser(
+    await request(`/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    })
+  );
+}
+
+export async function deleteUser(id) {
+  await request(`/users/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function requestAdminAccess() {
+  return request(`/admin-requests/me`, {
+    method: "POST",
+  });
+}
+
+export async function getMyAdminRequest() {
+  return request(`/admin-requests/me`);
+}
+
+export async function getAdminRequests() {
+  return request(`/admin-requests`);
+}
+
+export async function approveAdminRequest(id, durationHours) {
+  return request(`/admin-requests/${id}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ duration_hours: durationHours }),
+  });
+}
+
+export async function rejectAdminRequest(id) {
+  return request(`/admin-requests/${id}/reject`, {
+    method: "POST",
+  });
 }
 
 export async function getClasses() {
@@ -294,6 +354,12 @@ export async function getExports() {
 
 export async function downloadExport(id) {
   return requestResponse(`/trombi/exports/${id}/download`);
+}
+
+export async function deleteExport(id) {
+  await request(`/trombi/exports/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export async function generateTrombi(classId, format = "html") {
