@@ -99,7 +99,9 @@ def download_export(id: int, current_user: dict = Depends(get_current_user)):
     if export_format == "html" and not export.get("file_path"):
         students = StudentModel.find_all(class_id=export.get("class_id"))
         if not students:
-            raise HTTPException(status_code=404, detail="No students found for this export")
+            raise HTTPException(
+                status_code=404, detail="No students found for this export"
+            )
 
         html = generate_trombi_html(
             students,
@@ -129,7 +131,9 @@ def download_export(id: int, current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Export file is missing")
 
     extension = "html" if export_format == "html" else "pdf"
-    media_type = "text/html; charset=utf-8" if export_format == "html" else "application/pdf"
+    media_type = (
+        "text/html; charset=utf-8" if export_format == "html" else "application/pdf"
+    )
     filename = _safe_export_filename(class_label, extension)
     return FileResponse(
         str(file_path),
