@@ -50,7 +50,9 @@ def create_user(data: UserCreate):
     username = data.username.strip()
     email = data.email.strip()
     if not username or not email or not data.password:
-        raise HTTPException(status_code=400, detail="Username, email and password are required")
+        raise HTTPException(
+            status_code=400, detail="Username, email and password are required"
+        )
 
     try:
         return UserModel.create(
@@ -85,7 +87,9 @@ def update_user(id: int, data: UserUpdate, current_user: dict = Depends(require_
     if data.role is not None:
         role = _clean_role(data.role)
         if id == current_user["id"] and role != ADMIN_ROLE:
-            raise HTTPException(status_code=400, detail="An admin cannot remove their own admin role")
+            raise HTTPException(
+                status_code=400, detail="An admin cannot remove their own admin role"
+            )
         fields["role"] = role
 
     try:
@@ -101,7 +105,9 @@ def update_user(id: int, data: UserUpdate, current_user: dict = Depends(require_
 @router.delete("/{id}", status_code=204)
 def delete_user(id: int, current_user: dict = Depends(require_admin)):
     if id == current_user["id"]:
-        raise HTTPException(status_code=400, detail="An admin cannot delete their own account")
+        raise HTTPException(
+            status_code=400, detail="An admin cannot delete their own account"
+        )
     if not UserModel.delete(id):
         raise HTTPException(status_code=404, detail="User not found")
 

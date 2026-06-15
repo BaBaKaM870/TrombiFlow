@@ -32,8 +32,8 @@ class TestPhotoUpload:
 
         with patch("src.routers.students.StudentModel.find_by_id") as mock_find, patch(
             "src.routers.students.StudentModel.update_photo"
-
-            "src.routers.students.UPLOAD_DIR", str(tmp_path)
+            "src.routers.students.UPLOAD_DIR",
+            str(tmp_path),
         ):
             mock_find.return_value = {
                 "id": 1,

@@ -89,10 +89,9 @@ def download_export(id: int, current_user: dict = Depends(get_current_user)):
     export = ExportModel.find_by_id(id)
     if not export:
         raise HTTPException(status_code=404, detail="Export not found")
-    if (
-        current_user.get("role") != ADMIN_ROLE
-        and export.get("generated_by") != current_user.get("id")
-    ):
+    if current_user.get("role") != ADMIN_ROLE and export.get(
+        "generated_by"
+    ) != current_user.get("id"):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     export_format = (export.get("format") or "").lower()

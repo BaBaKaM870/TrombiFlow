@@ -38,7 +38,9 @@ def get_current_user(
                     except Exception:
                         # strip trailing Z and try again
                         try:
-                            admin_until_dt = datetime.fromisoformat(admin_until.rstrip("Z"))
+                            admin_until_dt = datetime.fromisoformat(
+                                admin_until.rstrip("Z")
+                            )
                         except Exception:
                             admin_until_dt = None
                 else:
@@ -52,7 +54,9 @@ def get_current_user(
                     if admin_until_dt <= now:
                         # downgrade user in DB and in-memory
                         try:
-                            UserModel.update(user_id, {"role": TEACHER_ROLE, "admin_until": None})
+                            UserModel.update(
+                                user_id, {"role": TEACHER_ROLE, "admin_until": None}
+                            )
                         except Exception:
                             pass
                         user["role"] = TEACHER_ROLE

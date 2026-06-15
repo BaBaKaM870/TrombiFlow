@@ -75,7 +75,10 @@ class UserModel:
 
     @staticmethod
     def update_photo(id: int, photo_url: str) -> Optional[dict]:
-        query_one("UPDATE users SET photo_url = %s WHERE id = %s RETURNING id", (photo_url, id))
+        query_one(
+            "UPDATE users SET photo_url = %s WHERE id = %s RETURNING id",
+            (photo_url, id),
+        )
         return UserModel.find_by_id(id)
 
     @staticmethod

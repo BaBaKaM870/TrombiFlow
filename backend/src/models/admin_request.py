@@ -11,8 +11,7 @@ class AdminRequestModel:
             )
             if exists:
                 return
-            query(
-                """
+            query("""
                 CREATE TABLE IF NOT EXISTS admin_access_requests (
                   id SERIAL PRIMARY KEY,
                   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -23,21 +22,16 @@ class AdminRequestModel:
                   reviewed_at TIMESTAMP WITH TIME ZONE,
                   granted_until TIMESTAMP WITH TIME ZONE
                 )
-                """
-            )
-            query(
-                """
+                """)
+            query("""
                 CREATE UNIQUE INDEX IF NOT EXISTS admin_requests_pending_user_idx
                   ON admin_access_requests(user_id)
                   WHERE status = 'pending'
-                """
-            )
-            if not query_one(
-                """
+                """)
+            if not query_one("""
                 SELECT column_name FROM information_schema.columns
                 WHERE table_name = 'users' AND column_name = 'admin_until'
-                """
-            ):
+                """):
                 query(
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_until TIMESTAMP WITH TIME ZONE NULL"
                 )

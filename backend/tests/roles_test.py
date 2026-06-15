@@ -7,7 +7,12 @@ from src.middlewares.auth import get_current_user
 
 client = TestClient(app)
 
-TEACHER = {"id": 2, "username": "teacher", "email": "teacher@test.fr", "role": "teacher"}
+TEACHER = {
+    "id": 2,
+    "username": "teacher",
+    "email": "teacher@test.fr",
+    "role": "teacher",
+}
 ADMIN = {"id": 1, "username": "admin", "email": "admin@test.fr", "role": "admin"}
 
 

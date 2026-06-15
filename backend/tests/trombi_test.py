@@ -9,7 +9,12 @@ from src.main import app
 from src.config.storage import UPLOAD_DIR
 from src.middlewares.auth import get_current_user
 
-MOCK_USER = {"id": 1, "username": "testuser", "email": "test@school.fr", "role": "admin"}
+MOCK_USER = {
+    "id": 1,
+    "username": "testuser",
+    "email": "test@school.fr",
+    "role": "admin",
+}
 MOCK_STUDENTS = [
     {
         "id": 1,
@@ -135,7 +140,9 @@ class TestTrombiDownload:
 class TestTrombiDelete:
     def test_deletes_export_and_saved_file(self):
         export_path = Path(UPLOAD_DIR) / "delete-export.html"
-        export_path.write_text("<!DOCTYPE html><html><body>OK</body></html>", encoding="utf-8")
+        export_path.write_text(
+            "<!DOCTYPE html><html><body>OK</body></html>", encoding="utf-8"
+        )
         with patch("src.routers.trombi.ExportModel.find_by_id") as mock_export, patch(
             "src.routers.trombi.ExportModel.delete"
         ) as mock_delete:
