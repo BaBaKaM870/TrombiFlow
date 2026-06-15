@@ -8,7 +8,7 @@ from typing import Optional
 from ..models.student import StudentModel
 from ..models.class_ import ClassModel
 from ..models.export import ExportModel
-from ..middlewares.auth import get_current_user
+from ..middlewares.auth import ADMIN_ROLE, get_current_user, require_admin
 from ..config.storage import UPLOAD_DIR
 from ..services.html_service import generate_trombi_html, save_trombi_html
 from ..services.pdf_service import generate_pdf
@@ -79,7 +79,9 @@ def generate(
 
 @router.get("/exports")
 def get_exports(current_user: dict = Depends(get_current_user)):
-    return ExportModel.find_all()
+    if current_user.get("role") == ADMIN_ROLE:
+        return ExportModel.find_all()
+    return ExportModel.find_by_user(current_user["id"])
 
 
 @router.get("/exports/{id}/download")
@@ -87,6 +89,11 @@ def download_export(id: int, current_user: dict = Depends(get_current_user)):
     export = ExportModel.find_by_id(id)
     if not export:
         raise HTTPException(status_code=404, detail="Export not found")
+    if (
+        current_user.get("role") != ADMIN_ROLE
+        and export.get("generated_by") != current_user.get("id")
+    ):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     export_format = (export.get("format") or "").lower()
     if export_format not in ("pdf", "html"):
@@ -99,18 +106,21 @@ def download_export(id: int, current_user: dict = Depends(get_current_user)):
     if export_format == "html" and not export.get("file_path"):
         students = StudentModel.find_all(class_id=export.get("class_id"))
         if not students:
-            raise HTTPException(status_code=404, detail="No students found for this export")
+            raise HTTPException(
+                status_code=404, detail="No students found for this export"
+            )
 
         html = generate_trombi_html(
             students,
             {"title": "Trombinoscope", "class_label": export.get("class_label") or ""},
         )
+        cd_header = (
+            f'attachment; filename="{_safe_export_filename(class_label, "html")}"'
+        )
         return Response(
             content=html,
             media_type="text/html; charset=utf-8",
-            headers={
-                "Content-Disposition": f'attachment; filename="{_safe_export_filename(class_label, "html")}"'
-            },
+            headers={"Content-Disposition": cd_header},
         )
 
     if not export.get("file_path"):
@@ -129,10 +139,30 @@ def download_export(id: int, current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Export file is missing")
 
     extension = "html" if export_format == "html" else "pdf"
-    media_type = "text/html; charset=utf-8" if export_format == "html" else "application/pdf"
+    media_type = (
+        "text/html; charset=utf-8" if export_format == "html" else "application/pdf"
+    )
     filename = _safe_export_filename(class_label, extension)
     return FileResponse(
         str(file_path),
         media_type=media_type,
         filename=filename,
     )
+
+
+@router.delete("/exports/{id}", status_code=204)
+def delete_export(id: int, _: dict = Depends(require_admin)):
+    export = ExportModel.find_by_id(id)
+    if not export:
+        raise HTTPException(status_code=404, detail="Export not found")
+
+    file_path_value = export.get("file_path")
+    if file_path_value:
+        file_path = Path(file_path_value).resolve()
+        upload_root = Path(UPLOAD_DIR).resolve()
+        if file_path == upload_root or upload_root in file_path.parents:
+            if file_path.exists() and file_path.is_file():
+                file_path.unlink()
+
+    if not ExportModel.delete(id):
+        raise HTTPException(status_code=404, detail="Export not found")

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import Icon from "./Icon";
 import Modal from "./Modal";
 
-export default function ProfileModal({ user, onClose, onSave, onLogout }) {
+export default function ProfileModal({ user, onClose, onSave, onLogout, onRequestAdminAccess }) {
   const [form, setForm] = useState({
     username: user?.username || "",
     email: user?.email || "",
@@ -133,6 +133,28 @@ export default function ProfileModal({ user, onClose, onSave, onLogout }) {
             <label className="form-label">Role</label>
             <input className="form-input" value={user?.role || "teacher"} disabled />
           </div>
+
+          {user?.role === "teacher" && (
+            <div className="form-group">
+              <label className="form-label">Demande administrateur</label>
+              <div>
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await onRequestAdminAccess?.();
+                      setError("");
+                    } catch (err) {
+                      setError(err.message || "Impossible d'envoyer la demande");
+                    }
+                  }}
+                >
+                  Demander les droits administrateur
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="form-group">
             <label className="form-label">Nouveau mot de passe</label>

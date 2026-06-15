@@ -6,7 +6,6 @@ import random
 import time
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from ..config.storage import UPLOAD_DIR
-from ..services.image_service import resize_photo
 from ..services.storage_service import save_photo
 from ..config.limiter import limiter
 
@@ -14,7 +13,7 @@ from pydantic import BaseModel
 from passlib.context import CryptContext
 from jose import jwt
 from ..models.user import UserModel
-from ..middlewares.auth import get_current_user
+from ..middlewares.auth import ADMIN_ROLE, TEACHER_ROLE, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 _pwd = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -29,7 +28,6 @@ class RegisterBody(BaseModel):
     username: str
     email: str
     password: str
-    role: str = "teacher"
     photo_url: str | None = None
 
 
@@ -43,11 +41,22 @@ ALLOWED_PHOTO_TYPES = {"image/jpeg", "image/png", "image/webp"}
 ALLOWED_PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_PHOTO_SIZE = 5 * 1024 * 1024
 MAX_ARGON2_PASSWORD_BYTES = 10000000000
+ALLOWED_ROLES = {ADMIN_ROLE, TEACHER_ROLE}
+
+
+def _normalize_role(role: str) -> str:
+    normalized = (role or TEACHER_ROLE).strip().lower()
+    if normalized not in ALLOWED_ROLES:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    return normalized
 
 
 def _validate_photo(photo: UploadFile):
     ext = os.path.splitext(photo.filename or "")[1].lower()
-    if photo.content_type not in ALLOWED_PHOTO_TYPES and ext not in ALLOWED_PHOTO_EXTENSIONS:
+    if (
+        photo.content_type not in ALLOWED_PHOTO_TYPES
+        and ext not in ALLOWED_PHOTO_EXTENSIONS
+    ):
         raise HTTPException(
             status_code=415,
             detail="Only JPEG, PNG and WebP images are allowed",
@@ -110,7 +119,7 @@ def register(data: RegisterBody):
             data.username,
             data.email,
             password_hash,
-            data.role,
+            TEACHER_ROLE,
             data.photo_url,
         )
     except Exception as e:
@@ -122,7 +131,6 @@ async def register_with_photo(
     username: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
-    role: str = Form("teacher"),
     photo: UploadFile | None = File(None),
 ):
     password_hash = _pwd.hash(_normalize_password(password))
@@ -132,7 +140,13 @@ async def register_with_photo(
         photo_url = await _save_uploaded_photo(photo)
 
     try:
-        return UserModel.create(username, email, password_hash, role, photo_url)
+        return UserModel.create(
+            username,
+            email,
+            password_hash,
+            TEACHER_ROLE,
+            photo_url,
+        )
     except Exception as e:
         raise HTTPException(status_code=409, detail=str(e))
 

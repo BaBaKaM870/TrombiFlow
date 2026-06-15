@@ -4,14 +4,19 @@ import DashboardPage from "./pages/DashboardPage";
 import ClassesPage from "./pages/ClassesPage";
 import StudentsPage from "./pages/StudentsPage";
 import GeneratePage from "./pages/GeneratePage";
+import UsersPage from "./pages/UsersPage";
 import Icon from "./components/Icon";
+import Modal from "./components/Modal";
 import ProfileModal from "./components/ProfileModal";
 import { ToastContainer, useToasts } from "./components/Toast";
 import {
   createClass,
   createStudent,
+  createUser,
   deleteClass,
+  deleteExport,
   deleteStudent,
+  deleteUser,
   downloadExport,
   generateTrombi,
   getClasses,
@@ -19,6 +24,7 @@ import {
   getMe,
   getStats,
   getStudents,
+  getUsers,
   importStudentsCSV,
   login,
   register,
@@ -26,7 +32,10 @@ import {
   updateClass,
   updateCurrentUser,
   updateStudent,
+  updateUser,
   uploadCurrentUserPhoto,
+  requestAdminAccess,
+  getAdminRequests,
   uploadStudentPhoto,
 } from "./services/clientAPI";
 import esieeLogo from "./images/logo-esiee-it.png";
@@ -38,25 +47,55 @@ export default function App() {
   const [classes, setClasses] = useState([]);
   const [students, setStudents] = useState([]);
   const [exportsLog, setExportsLog] = useState([]);
+  const [users, setUsers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [exportToDelete, setExportToDelete] = useState(null);
+  const [deletingExport, setDeletingExport] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [storageBytes, setStorageBytes] = useState(null);
+  const [adminRequests, setAdminRequests] = useState([]);
   const { toasts, add: addToast } = useToasts();
+  const roleLabel = (role) => (role === "admin" ? "Administrateur" : "Enseignant");
 
-  const reloadData = async () => {
-    const [classesData, studentsData, exportsData, statsData] = await Promise.all([
+  const isAdmin = currentUser?.role === "admin";
+
+  const reloadAdminRequests = async (activeUser = currentUser) => {
+    if (activeUser?.role !== "admin") {
+      setAdminRequests([]);
+      return;
+    }
+    try {
+      const list = await getAdminRequests();
+      setAdminRequests(Array.isArray(list) ? list : []);
+    } catch (error) {
+      setAdminRequests([]);
+      addToast(error.message || "Impossible de charger les demandes admin", "error");
+    }
+  };
+
+  const reloadData = async (activeUser = currentUser) => {
+    const [classesData, studentsData, exportsData, statsData, usersData] = await Promise.all([
       getClasses(),
       getStudents(),
       getExports(),
       getStats().catch(() => null),
+      activeUser?.role === "admin" ? getUsers() : Promise.resolve([]),
     ]);
 
     setClasses(classesData);
     setStudents(studentsData);
     setExportsLog(exportsData);
+    setUsers(usersData);
     if (statsData) setStorageBytes(statsData.storage_bytes);
+    await reloadAdminRequests(activeUser);
   };
+
+  useEffect(() => {
+    if (page === "users" && isAdmin) {
+      reloadAdminRequests();
+    }
+  }, [page, isAdmin, currentUser?.id]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -69,7 +108,7 @@ export default function App() {
       try {
         const user = await getMe();
         setCurrentUser(user);
-        await reloadData();
+        await reloadData(user);
         setPage("dashboard");
       } catch {
         localStorage.removeItem("token");
@@ -88,7 +127,7 @@ export default function App() {
   const handleAuthSuccess = async ({ token, user }) => {
     localStorage.setItem("token", token);
     setCurrentUser(user);
-    await reloadData();
+    await reloadData(user);
     setPage("dashboard");
   };
 
@@ -98,13 +137,18 @@ export default function App() {
     return result;
   };
 
+  const ensureAdmin = () => {
+    if (!isAdmin) {
+      throw new Error("Action réservée aux administrateurs");
+    }
+  };
+
   const handleRegister = async (form) => {
     if (form.photo) {
       const formData = new FormData();
       formData.append("username", form.name);
       formData.append("email", form.email);
       formData.append("password", form.password);
-      formData.append("role", "teacher");
       formData.append("photo", form.photo);
       await registerWithPhoto(formData);
     } else {
@@ -112,7 +156,6 @@ export default function App() {
         username: form.name,
         email: form.email,
         password: form.password,
-        role: "teacher",
       });
     }
 
@@ -122,6 +165,7 @@ export default function App() {
   };
 
   const handleClassSave = async (form, editingId = null) => {
+    ensureAdmin();
     const payload = {
       label: form.label.trim(),
       year: form.year?.trim() || null,
@@ -139,12 +183,14 @@ export default function App() {
   };
 
   const handleClassDelete = async (id) => {
+    ensureAdmin();
     await deleteClass(id);
     addToast("Classe supprimée", "error");
     await reloadData();
   };
 
   const handleStudentSave = async (form, editingId = null) => {
+    ensureAdmin();
     const payload = {
       first_name: form.firstName.trim(),
       last_name: form.lastName.trim(),
@@ -182,12 +228,14 @@ export default function App() {
   };
 
   const handleStudentDelete = async (id) => {
+    ensureAdmin();
     await deleteStudent(id);
     addToast("Étudiant supprimé", "error");
     await reloadData();
   };
 
   const handleCsvImport = async (file) => {
+    ensureAdmin();
     const result = await importStudentsCSV(file);
     addToast(`Import CSV : ${result.created} créés`, "success");
     await reloadData();
@@ -195,6 +243,7 @@ export default function App() {
   };
 
   const handleStudentPhotoUpload = async (id, file) => {
+    ensureAdmin();
     await uploadStudentPhoto(id, file);
     addToast("Photo mise à jour ✓");
     await reloadData();
@@ -213,6 +262,37 @@ export default function App() {
     addToast("Profil mis à jour ✓");
   };
 
+  const handleRequestAdminAccess = async () => {
+    try {
+      await requestAdminAccess();
+      addToast("Demande envoyée ✓");
+    } catch (error) {
+      addToast(error.message || "Impossible d'envoyer la demande", "error");
+      throw error;
+    }
+  };
+
+  const handleCreateUser = async (payload) => {
+    ensureAdmin();
+    const created = await createUser(payload);
+    await reloadData(currentUser);
+    return created;
+  };
+
+  const handleUpdateUser = async (id, payload) => {
+    ensureAdmin();
+    const updated = await updateUser(id, payload);
+    await reloadData(currentUser);
+    if (id === currentUser?.id) setCurrentUser(updated);
+    return updated;
+  };
+
+  const handleDeleteUser = async (id) => {
+    ensureAdmin();
+    await deleteUser(id);
+    await reloadData(currentUser);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     setCurrentUser(null);
@@ -220,6 +300,7 @@ export default function App() {
     setClasses([]);
     setStudents([]);
     setExportsLog([]);
+    setUsers([]);
     setStorageBytes(null);
     setPage("landing");
     addToast("Session fermée");
@@ -248,11 +329,41 @@ export default function App() {
     URL.revokeObjectURL(downloadUrl);
   };
 
+  const handleDeleteExport = async (entry) => {
+    ensureAdmin();
+    setExportToDelete(entry);
+    return;
+    if (!window.confirm(`Supprimer l'export ${entry.format} de ${entry.class || "toutes les classes"} ?`)) {
+      return;
+    }
+
+    await deleteExport(entry.id);
+    addToast("Export supprimé", "error");
+    await reloadData(currentUser);
+  };
+
+  const confirmDeleteExport = async () => {
+    if (!exportToDelete?.id) return;
+    ensureAdmin();
+    setDeletingExport(true);
+    try {
+      await deleteExport(exportToDelete.id);
+      addToast("Export supprimé", "error");
+      setExportToDelete(null);
+      await reloadData(currentUser);
+    } catch (error) {
+      addToast(error.message || "Impossible de supprimer l'export", "error");
+    } finally {
+      setDeletingExport(false);
+    }
+  };
+
   const nav = [
     { id: "dashboard", label: "Tableau de bord", icon: "dashboard", section: "NAVIGATION" },
     { id: "classes", label: "Classes", icon: "classes", section: null, badge: classesView.length },
     { id: "students", label: "Étudiants", icon: "students", section: null, badge: students.length },
     { id: "generate", label: "Générer", icon: "generate", section: "EXPORT" },
+    ...(isAdmin ? [{ id: "users", label: "Utilisateurs", icon: "users", section: "ADMIN", badge: users.length }] : []),
   ];
 
   if (page === "landing") {
@@ -328,7 +439,7 @@ export default function App() {
             )}
             <div>
               <div className="user-info-name">{currentUser?.username || "Admin"}</div>
-              <div className="user-info-role">{currentUser?.role || "Administrateur"}</div>
+              <div className="user-info-role">{roleLabel(currentUser?.role)}</div>
             </div>
           </button>
         </aside>
@@ -340,6 +451,7 @@ export default function App() {
               {page === "classes" && <>Gestion des <span>classes</span></>}
               {page === "students" && <>Gestion des <span>étudiants</span></>}
               {page === "generate" && <>Générer un <span>trombinoscope</span></>}
+              {page === "users" && <>Gestion des <span>utilisateurs</span></>}
             </div>
             {(page === "students" || page === "classes") && (
               <div className="search-box">
@@ -350,10 +462,23 @@ export default function App() {
             <span className="badge badge-blue session-badge">Session active</span>
           </div>
 
-          {page === "dashboard" && <DashboardPage classes={classesView} students={students} exports={exportsLog} storageBytes={storageBytes} onDownloadExport={handleDownloadExport} />}
-          {page === "classes" && <ClassesPage classes={classesView} students={students} onSaveClass={handleClassSave} onDeleteClass={handleClassDelete} toast={addToast} />}
-          {page === "students" && <StudentsPage students={students} classes={classesView} onSaveStudent={handleStudentSave} onDeleteStudent={handleStudentDelete} onImportCsv={handleCsvImport} onUploadPhoto={handleStudentPhotoUpload} toast={addToast} />}
+          {page === "dashboard" && <DashboardPage classes={classesView} students={students} exports={exportsLog} storageBytes={storageBytes} canDeleteExports={isAdmin} onDownloadExport={handleDownloadExport} onDeleteExport={handleDeleteExport} />}
+          {page === "classes" && <ClassesPage classes={classesView} students={students} canManage={isAdmin} onSaveClass={handleClassSave} onDeleteClass={handleClassDelete} toast={addToast} />}
+          {page === "students" && <StudentsPage students={students} classes={classesView} canManage={isAdmin} onSaveStudent={handleStudentSave} onDeleteStudent={handleStudentDelete} onImportCsv={handleCsvImport} onUploadPhoto={handleStudentPhotoUpload} toast={addToast} />}
           {page === "generate" && <GeneratePage classes={classesView} students={students} onGenerateTrombi={handleGenerateTrombi} toast={addToast} />}
+          {page === "users" && isAdmin && (
+            <UsersPage
+              users={users}
+              exportsLog={exportsLog}
+              currentUser={currentUser}
+              adminRequests={adminRequests}
+              onReloadAdminRequests={reloadAdminRequests}
+              onCreateUser={handleCreateUser}
+              onUpdateUser={handleUpdateUser}
+              onDeleteUser={handleDeleteUser}
+              toast={addToast}
+            />
+          )}
         </main>
       </div>
 
@@ -364,7 +489,36 @@ export default function App() {
           onClose={() => setShowProfile(false)}
           onSave={handleProfileSave}
           onLogout={handleLogout}
+          onRequestAdminAccess={handleRequestAdminAccess}
         />
+      )}
+      {exportToDelete && (
+        <Modal
+          title="Confirmer la suppression"
+          onClose={() => !deletingExport && setExportToDelete(null)}
+          className="confirm-modal"
+          footer={
+            <>
+              <button className="btn btn-secondary" type="button" disabled={deletingExport} onClick={() => setExportToDelete(null)}>
+                Annuler
+              </button>
+              <button className="btn btn-danger" type="button" disabled={deletingExport} onClick={confirmDeleteExport}>
+                <Icon name="trash" /> {deletingExport ? "Suppression..." : "Supprimer"}
+              </button>
+            </>
+          }
+        >
+          <div className="confirm-delete">
+            <div className="confirm-delete-icon"><Icon name="trash" size={22} /></div>
+            <div>
+              <div className="confirm-delete-title">Supprimer cet export ?</div>
+              <p>
+                Cette action supprimera l'export <strong>{exportToDelete.format}</strong> de{" "}
+                <strong>{exportToDelete.class || "toutes les classes"}</strong> ainsi que le fichier genere s'il existe.
+              </p>
+            </div>
+          </div>
+        </Modal>
       )}
     </>
   );

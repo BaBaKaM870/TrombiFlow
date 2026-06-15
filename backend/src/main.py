@@ -12,7 +12,7 @@ from fastapi import Depends
 from .config.limiter import limiter
 from .config.storage import UPLOAD_DIR, STORAGE_TYPE
 from .middlewares.auth import get_current_user
-from .routers import auth, classes, students, trombi
+from .routers import auth, classes, students, trombi, users, admin_requests
 from .services.storage_service import _s3_client, _S3_BUCKET
 
 load_dotenv()
@@ -35,6 +35,13 @@ app.include_router(auth.router)
 app.include_router(classes.router)
 app.include_router(students.router)
 app.include_router(trombi.router)
+app.include_router(users.router)
+app.include_router(admin_requests.router)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.get("/api/me")

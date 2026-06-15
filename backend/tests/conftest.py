@@ -16,7 +16,7 @@ MOCK_USER = {
     "id": 1,
     "username": "testuser",
     "email": "test@school.fr",
-    "role": "teacher",
+    "role": "admin",
 }
 
 

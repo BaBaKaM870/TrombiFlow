@@ -63,9 +63,9 @@ TrombiFlow est une application web conteneurisée qui permet à l'administration
 |--------|-------------|
 | **Backend** | Python 3.11 · FastAPI · uvicorn |
 | **Frontend** | React 18 · Vite · Node.js 20-alpine |
-| **Base de données** | PostgreSQL 15-alpine |
-| **Stockage fichiers** | Local `/uploads` ou S3/MinIO |
-| **Génération PDF** | WeasyPrint / wkhtmltopdf |
+| **Base de données** | Supabase (PostgreSQL) |
+| **Stockage fichiers** | Supabase Storage (S3-compatible) |
+| **Génération PDF** | ReportLab |
 | **Conteneurisation** | Docker multi-stage · Docker Compose |
 | **Orchestration** | Docker Compose · Kubernetes (manifests) |
 | **CI/CD** | GitHub Actions (test → build → deploy) |
@@ -99,7 +99,7 @@ trombi-connecte/
 
 ---
 
-## ✅ Prérequis
+##  Prérequis
 
 - [Docker](https://www.docker.com/) >= 24 & Docker Compose >= 2
 - [Python](https://www.python.org/) >= 3.11 *(backend FastAPI en local)*
@@ -124,8 +124,7 @@ docker compose up -d
 
 L'application sera disponible sur :
 - **Frontend** → http://localhost:5173
-- **API Backend** -> http://localhost:8000
-- **MinIO Console** → http://localhost:9001 *(si activé)*
+- **API Backend** → http://localhost:8000
 
 ---
 
@@ -134,27 +133,26 @@ L'application sera disponible sur :
 Copiez `.env.example` en `.env` et renseignez les valeurs :
 
 ```env
-# Base de données
-DATABASE_URL=postgresql://user:password@localhost:5432/trombiflow
+# Base de données (Supabase)
+DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres
 
-# Stockage (local ou s3)
-STORAGE_TYPE=local
-UPLOAD_DIR=uploads
-
-# S3/MinIO (si stockage S3)
-S3_BUCKET=trombiflow
-S3_ENDPOINT=http://minio:9000
-S3_KEY=minioadmin
-S3_SECRET=minioadmin
-
-# Génération PDF
-PDF_ENGINE=weasyprint   # ou wkhtmltopdf
-
-# Auth JWT (optionnel)
-JWT_SECRET=change_me_in_production
-
-# Serveur
+# Backend
+ENV=development
 PORT=8000
+BACKEND_PORT=8000
+JWT_SECRET=change_me_with_a_long_random_secret_min_32_characters
+
+# Frontend
+FRONTEND_PORT=5173
+VITE_API_BASE_URL=http://localhost:8000/api
+
+# Stockage Supabase Storage (S3-compatible)
+STORAGE_TYPE=s3
+S3_BUCKET=trombiflow
+S3_ENDPOINT=https://[ref].supabase.co/storage/v1/s3
+S3_REGION=eu-west-1
+S3_KEY=your_s3_access_key
+S3_SECRET=your_s3_secret_key
 ```
 
 ---
@@ -228,29 +226,23 @@ Jean,Dupont,jean.dupont@school.fr,3A,2025,
 ##  Tests
 
 ```bash
-# Depuis la racine du projet, tout lancer en une seule commande (Bash/Git Bash)
-(cd backend && npm test -- --watchAll=false) && (cd ../frontend && CI=true npm test -- --watchAll=false)
+# Tests backend (Python/pytest)
+cd backend
+pip install -r requirements.txt
+pytest
 
-#Sur le terminal de VSC :
-Set-Location backend; npm test -- --watchAll=false; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
-
-# Lancer tous les tests backend
-cd backend && npm test
-
-# Lancer les tests frontend
-cd frontend && npm test
-
-# Avec couverture de code
-npm run test:coverage
+# Tests frontend (Jest)
+cd frontend
+npm install
+CI=true npm test -- --watchAll=false
 ```
 
 ```powershell
-# Depuis la racine du projet, tout lancer en une seule commande (PowerShell Windows)
-Set-Location backend; npm test -- --watchAll=false; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
+# Depuis la racine du projet (PowerShell Windows)
+Set-Location backend; pytest; Set-Location ..\frontend; $env:CI='true'; npm test -- --watchAll=false
 ```
 
 > Sous Windows PowerShell, utilise le bloc `powershell` ci-dessus.
-> La ligne `CI=true ...` du bloc `bash` ne fonctionne pas en PowerShell.
 
 Les tests couvrent : création classe/élève, import CSV (happy path + erreurs), upload photo → vignette générée, génération trombi HTML (statut 200) et PDF (fichier non vide).
 
@@ -258,24 +250,27 @@ Les tests couvrent : création classe/élève, import CSV (happy path + erreurs)
 
 ##  CI/CD
 
-Le pipeline GitHub Actions se déclenche à chaque push et comprend 3 jobs :
+Le pipeline GitHub Actions se déclenche à chaque push sur `main` ou `devops` et comprend 5 jobs :
 
 ```
-test ──► build ──► deploy
+check-versions ──► test-backend ──► test-frontend ──► build ──► deploy
 ```
 
-- **test** : installation des dépendances + exécution des tests
-- **build** : construction des images Docker + push sur GHCR
-- **deploy** : déploiement via SSH (`docker compose pull && up -d`)
+- **check-versions** : vérifie que toutes les dépendances sont épinglées (`==`)
+- **test-backend** : Black, Flake8, pytest
+- **test-frontend** : ESLint, Prettier (via conteneur Docker Node)
+- **build** : construction des images Docker backend + frontend, push sur GHCR (tag = SHA du commit)
+- **deploy** : désactivé par défaut (`DEPLOY_ENABLED: false`) — structure SSH prête pour un futur serveur
 
-Secrets à configurer dans GitHub → Settings → Secrets :
+Secrets à configurer dans GitHub → Settings → Secrets (uniquement si deploy activé) :
 
 ```
-REGISTRY_USER      # Identifiant Docker Hub / GHCR
-REGISTRY_TOKEN     # Token d'accès registry
 SSH_HOST           # IP du serveur de déploiement
+SSH_USER           # Utilisateur SSH
 SSH_KEY            # Clé SSH privée
 ```
+
+> `GITHUB_TOKEN` est injecté automatiquement par GitHub Actions pour le push GHCR — aucune configuration manuelle nécessaire.
 
 ---
 
