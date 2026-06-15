@@ -4,7 +4,7 @@ import logging
 
 from ..middlewares.auth import get_current_user, require_admin
 from ..models.admin_request import AdminRequestModel
-from ..models.user import UserModel
+
 
 logger = logging.getLogger(__name__)
 

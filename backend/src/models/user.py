@@ -9,7 +9,8 @@ class UserModel:
     def _has_admin_until_column() -> bool:
         try:
             res = query_one(
-                "SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'admin_until'",
+                "SELECT column_name FROM information_schema.columns"
+                " WHERE table_name = 'users' AND column_name = 'admin_until'",
             )
             return bool(res)
         except Exception:
@@ -45,7 +46,8 @@ class UserModel:
     ) -> Optional[dict]:
         # Insert and return the freshly created user using a safe pattern
         inserted = query_one(
-            "INSERT INTO users (username, email, password_hash, role, photo_url) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            "INSERT INTO users (username, email, password_hash, role, photo_url)"
+            " VALUES (%s, %s, %s, %s, %s) RETURNING id",
             (username, email, password_hash, role, photo_url),
         )
         if not inserted:
