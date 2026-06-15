@@ -29,12 +29,10 @@ class AdminRequestModel:
                   ON admin_access_requests(user_id)
                   WHERE status = 'pending'
                 """)
-            col_exists = query_one(
-                """
+            col_exists = query_one("""
                 SELECT column_name FROM information_schema.columns
                 WHERE table_name = 'users' AND column_name = 'admin_until'
-                """
-            )
+                """)
             if not col_exists:
                 query(
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS"

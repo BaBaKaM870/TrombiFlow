@@ -5,7 +5,6 @@ import logging
 from ..middlewares.auth import get_current_user, require_admin
 from ..models.admin_request import AdminRequestModel
 
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/admin-requests", tags=["admin-requests"])
